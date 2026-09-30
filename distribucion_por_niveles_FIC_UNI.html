@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distribución por niveles FIC-UNI</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Lámina de arquitectura: rótulo arriba, niveles a la izquierda, planta al centro, cuadro de áreas a la derecha.
+   Papel frío, tinta azul-negra, acento cobalto de tinta de plano. */
+:root{
+  --bg:#EEF0EC; --panel:#F8F9F6; --paper:#FDFDFB; --ink:#16202A; --ink2:#34414D; --muted:#64707B;
+  --line:#CFD5D0; --line2:#E2E6E1; --accent:#1D4FA3; --accent-soft:#DDE7F7; --accent-ink:#FFFFFF;
+  --wall:#27323D; --win:#2F86D6; --stall:rgba(255,255,255,.55); --halo:#FDFDFB;
+  --ok:#1F7A4D; --warn:#A35A00;
+  --f-display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  --f-body:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --k-cv:#A9B4C8;
+  --k-sv:#D6D0EA;
+  --k-circ:#F6F4EB;
+  --k-aula:#C3E6B8;
+  --k-lab:#A8D4F0;
+  --k-apoyo:#B6E3E0;
+  --k-comp:#DCC6EE;
+  --k-taller:#F4E08C;
+  --k-adm:#E9D7B4;
+  --k-estudio:#D6E6A0;
+  --k-cafe:#F5B9A4;
+  --k-magna:#F0B8CF;
+  --k-dep:#DDD7CC;
+  --k-park:#DADEE4;
+  --k-serv:#BFC6CE;
+  --k-libre:#DDEFCF;
+  --k-tol:#C2C8CD;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1419; --panel:#161D24; --paper:#1B232B; --ink:#E7ECF0; --ink2:#C3CCD4; --muted:#8D99A4;
+    --line:#2C3741; --line2:#232D36; --accent:#7EA7F2; --accent-soft:#1E2E4B; --accent-ink:#0F1419;
+    --wall:#AAB6C2; --win:#58A8F0; --stall:rgba(255,255,255,.06); --halo:#1B232B;
+    --ok:#62C691; --warn:#E3A24D;
+    color-scheme:dark;
+    --k-cv:#4B5871;
+  --k-sv:#4B4768;
+  --k-circ:#222A32;
+  --k-aula:#2F5C3C;
+  --k-lab:#2A5B80;
+  --k-apoyo:#286361;
+  --k-comp:#5C4079;
+  --k-taller:#7D6C1F;
+  --k-adm:#6B5B3B;
+  --k-estudio:#586D24;
+  --k-cafe:#874531;
+  --k-magna:#87425F;
+  --k-dep:#4C473F;
+  --k-park:#363D47;
+  --k-serv:#4B555F;
+  --k-libre:#2C4B26;
+  --k-tol:#4E5760;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1419; --panel:#161D24; --paper:#1B232B; --ink:#E7ECF0; --ink2:#C3CCD4; --muted:#8D99A4;
+  --line:#2C3741; --line2:#232D36; --accent:#7EA7F2; --accent-soft:#1E2E4B; --accent-ink:#0F1419;
+  --wall:#AAB6C2; --win:#58A8F0; --stall:rgba(255,255,255,.06); --halo:#1B232B;
+  --ok:#62C691; --warn:#E3A24D;
+  color-scheme:dark;
+  --k-cv:#4B5871;
+  --k-sv:#4B4768;
+  --k-circ:#222A32;
+  --k-aula:#2F5C3C;
+  --k-lab:#2A5B80;
+  --k-apoyo:#286361;
+  --k-comp:#5C4079;
+  --k-taller:#7D6C1F;
+  --k-adm:#6B5B3B;
+  --k-estudio:#586D24;
+  --k-cafe:#874531;
+  --k-magna:#87425F;
+  --k-dep:#4C473F;
+  --k-park:#363D47;
+  --k-serv:#4B555F;
+  --k-libre:#2C4B26;
+  --k-tol:#4E5760;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 14px/1.45 var(--f-body)}
+button{font:inherit;color:inherit}
+.page{max-width:1520px;margin-inline:auto;padding-inline:16px;padding-block:18px 56px;display:grid;gap:18px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- rótulo ---------- */
+.tb{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr);border:1.5px solid var(--ink);background:var(--panel)}
+.tb>*{padding:14px 16px;min-width:0}
+.tb>*+*{border-left:1.5px solid var(--ink)}
+.eyebrow{margin:0 0 4px;font:600 12px/1.2 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font:700 clamp(30px,4.2vw,46px)/.95 var(--f-display);letter-spacing:.005em;text-wrap:balance}
+.lede{margin:8px 0 0;max-width:62ch;color:var(--ink2)}
+.tb-cell h2{margin:0 0 6px;font:600 13px/1.2 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.tb-cell .big{font:700 30px/1 var(--f-display)}
+.tb-cell .big small{font:500 15px var(--f-body);color:var(--muted);margin-left:6px}
+.tb-cell p{margin:6px 0 0;color:var(--ink2);font-size:13px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* ---------- aplicación ---------- */
+.app{display:grid;grid-template-columns:236px minmax(0,1fr) 352px;gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:3px}
+.rail{position:sticky;top:12px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:12px;max-height:calc(100vh - 24px);overflow:auto}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--ink);border-radius:2px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:9px 8px;cursor:pointer;text-align:left;line-height:1.15;min-width:0}
+.seg button+button{border-left:1.5px solid var(--ink)}
+.seg button b{display:block;font:700 16px/1 var(--f-display);letter-spacing:.01em;white-space:nowrap}
+.seg button span{font-size:12px;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.seg button[aria-selected="true"] span{color:inherit;opacity:.75}
+.lvls{list-style:none;margin:0;padding:0;display:grid}
+.lvls li{display:block}
+.lv{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr);width:100%;text-align:left;background:transparent;border:0;border-top:1px solid var(--line2);padding:8px 8px 8px 0;cursor:pointer}
+.lvls li:first-child .lv{border-top:0}
+.lv:hover{background:var(--accent-soft)}
+.lv[aria-current="true"]{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.shaft{position:relative;display:block}
+.shaft::before,.shaft::after{content:"";position:absolute;top:-9px;bottom:-9px;width:2px;background:var(--ink2);opacity:.55}
+.shaft::before{left:5px}
+.shaft::after{left:12px;background:var(--accent)}
+.lvls li:first-child .shaft::before,.lvls li:first-child .shaft::after{top:50%}
+.lvls li:last-child .shaft::before,.lvls li:last-child .shaft::after{bottom:50%}
+.shaft.no-lift::after{display:none}
+.shaft i{position:absolute;top:50%;left:2px;width:14px;height:8px;margin-top:-4px;background:var(--panel);border:1.5px solid var(--ink2);border-radius:1px}
+.lv-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.lv-h b{font:700 17px/1.1 var(--f-display);letter-spacing:.01em}
+.lv-h em{font:500 12px var(--f-mono);font-style:normal;color:var(--muted)}
+.bar{display:flex;height:9px;margin:5px 0 4px;border:1px solid var(--wall);border-radius:1px;overflow:hidden;background:var(--paper)}
+.bar i{display:block;min-width:1px}
+.lv-use{display:block;font-size:12px;line-height:1.3;color:var(--ink2)}
+.rail-foot{margin:2px 0 0;font-size:12px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+.rail-foot span::before{content:"";display:inline-block;width:2px;height:11px;margin-right:6px;vertical-align:-1px}
+.rail-foot .a::before{background:var(--ink2);opacity:.55}.rail-foot .b::before{background:var(--accent)}
+
+.sheet{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:16px}
+.sheet>*,.sec>*,.foot>*{min-width:0}
+.sheet-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 24px}
+.sheet-h h2{margin:0;font:700 clamp(28px,3.4vw,40px)/1 var(--f-display);letter-spacing:.005em}
+.sheet-h h2 .cota{font:500 .42em var(--f-mono);color:var(--muted);margin-left:10px;letter-spacing:0;white-space:nowrap;display:inline-block}
+.sheet-h p{margin:4px 0 0;color:var(--ink2)}
+.kpis{display:flex;flex-wrap:wrap;margin:0;border-top:1px solid var(--line);border-left:1px solid var(--line);background:var(--paper);border-radius:2px}
+.kpis div{flex:1 1 auto;padding:7px 12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.kpis dt{white-space:nowrap;font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.kpis dd{margin:0;font:500 17px/1.25 var(--f-mono);font-variant-numeric:tabular-nums}
+.kpis dd small{font-size:11px;color:var(--muted)}
+.plan{margin:0;border:1px solid var(--line);background:var(--paper);border-radius:2px}
+.plan-scroll{overflow-x:auto}
+.plan svg{display:block;width:100%;height:auto;min-width:700px}
+.plan figcaption{padding:8px 12px;border-top:1px solid var(--line2);font-size:12.5px;color:var(--muted)}
+.only-m{display:none}
+.plan figcaption .wl{display:inline-block;width:22px;border-top:3px dotted var(--win);vertical-align:middle;margin:0 4px 2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:4px 9px 4px 6px;border:1px solid var(--line);background:var(--paper);border-radius:2px;cursor:pointer;font-size:12.5px;line-height:1.2}
+.chip:hover{border-color:var(--ink2)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.chip .sw{width:14px;height:14px;border:1px solid var(--wall);border-radius:1px;flex:none}
+.chip .m{font:400 11.5px var(--f-mono);color:var(--muted)}
+.notes{margin:0;padding:0;list-style:none;display:grid;gap:4px;color:var(--ink2);font-size:13.5px}
+.notes li{padding-left:16px;position:relative}
+.notes li::before{content:"";position:absolute;left:2px;top:.62em;width:7px;height:2px;background:var(--accent)}
+
+.areas{padding:14px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+.areas h3,.sec h3{margin:0 0 8px;font:600 13px/1.2 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+table{border-collapse:collapse;width:100%}
+.tbl{overflow-x:auto}
+th,td{padding:5px 6px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line2)}
+.areas td{font-size:13px;line-height:1.3}
+th{font:600 11.5px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap;border-bottom:1.5px solid var(--ink)}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.n{font-size:12.5px}
+.areas tbody tr{cursor:default}
+.areas tbody tr.hl,.areas tbody tr:hover{background:var(--accent-soft)}
+.areas tr.sub td{font-weight:500;color:var(--muted)}
+.areas tr.tot td{border-top:1.5px solid var(--ink);border-bottom:0;font-weight:600}
+.nm{display:flex;gap:7px;align-items:flex-start}
+.nm .sw{width:11px;height:11px;margin-top:4px;border:1px solid var(--wall);border-radius:1px;flex:none}
+.tag{display:inline-block;margin-top:2px;padding:0 5px;border:1px solid var(--win);color:var(--win);font-size:10.5px;line-height:15px;border-radius:2px}
+.cnt{font:500 11.5px var(--f-mono);color:var(--muted);margin-left:5px}
+.u{display:block;font-size:11px;color:var(--muted);font-family:var(--f-mono)}
+.tip{position:fixed;z-index:20;pointer-events:none;background:var(--ink);color:var(--bg);padding:7px 10px;border-radius:3px;font-size:12.5px;line-height:1.35;max-width:260px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.tip b{font:600 14px var(--f-body);display:block}
+.tip span{display:block;opacity:.85}
+.tip[hidden]{display:none}
+
+.sec{padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.sec tbody tr.go{cursor:pointer}
+.sec tbody tr.go:hover{background:var(--accent-soft)}
+.sec td.use{min-width:200px}
+.sec .cur td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.status{display:inline-flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+.status::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--ok)}
+.status.pend{color:var(--warn)}
+.status.pend::before{background:var(--warn)}
+.where{display:flex;flex-wrap:wrap;gap:5px}
+.go-btn{padding:2px 8px;border:1px solid var(--line);background:var(--paper);border-radius:2px;cursor:pointer;font-size:12.5px}
+.go-btn:hover{border-color:var(--accent);color:var(--accent)}
+.foot{padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:8px;color:var(--ink2);font-size:13.5px}
+.foot ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.foot p{margin:0}
+
+/* ---------- plano (SVG) ---------- */
+.plan .rm .fill{stroke:var(--wall);stroke-width:1.5px;vector-effect:non-scaling-stroke}
+.plan .rm .fill.core{stroke-width:2.4px}
+.plan .rm .fill.nb{stroke:none}
+.plan .wall{fill:var(--wall)}
+.plan .sheetbg{fill:var(--paper)}
+.plan .dim{stroke:var(--ink2);stroke-width:1px;vector-effect:non-scaling-stroke;fill:none}
+.plan .dimt{fill:var(--ink2);font-family:var(--f-mono);font-weight:500;text-anchor:middle}
+.plan .win{stroke:var(--win);stroke-width:.17;stroke-dasharray:1.35 .42;fill:none}
+.plan .t{font-family:var(--f-body);fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke-width:.2;stroke-linejoin:round;pointer-events:none}
+.plan .t.n{font-weight:600}
+.plan .t.a{font-family:var(--f-mono);font-weight:400;fill:var(--ink2)}
+.plan .t.s{fill:var(--ink2);font-style:italic}
+.plan .t.f{font-weight:600;fill:var(--ink2);stroke:none}
+.plan .fs{fill:none;stroke:var(--ink2);stroke-width:1px;vector-effect:non-scaling-stroke;pointer-events:none}
+.plan .fsf{fill:var(--stall);stroke:var(--ink2);stroke-width:1px;vector-effect:non-scaling-stroke;pointer-events:none}
+.plan .fsd{fill:none;stroke:var(--ink2);stroke-width:1px;stroke-dasharray:4 3;vector-effect:non-scaling-stroke;pointer-events:none}
+.plan .fst{fill:none;stroke:var(--ink);stroke-width:2.6px;vector-effect:non-scaling-stroke;pointer-events:none}
+.plan .fur{opacity:.78}
+.plan .grass{fill:url(#pGrass)}
+.plan .dots{fill:url(#pDots)}
+.plan .hatch{fill:url(#pHatch)}
+.plan .hlr{fill:none;stroke:var(--accent);stroke-width:3.4px;vector-effect:non-scaling-stroke;pointer-events:none}
+.plan .ent{fill:var(--accent);stroke:none}
+.plan .entl{fill:var(--accent);stroke:var(--accent);stroke-width:1.6px;vector-effect:non-scaling-stroke}
+.plan .entt{fill:var(--accent);font-family:var(--f-body);font-weight:600}
+.plan.focus .rm:not(.on){opacity:.2}
+.plan .rm{cursor:default}
+.k-cv .fill{fill:var(--k-cv)}.k-cv .t{stroke:var(--k-cv)}.sw-cv{background:var(--k-cv)}.k-cv .cb{fill:var(--k-cv);opacity:.9}
+.k-sv .fill{fill:var(--k-sv)}.k-sv .t{stroke:var(--k-sv)}.sw-sv{background:var(--k-sv)}.k-sv .cb{fill:var(--k-sv);opacity:.9}
+.k-circ .fill{fill:var(--k-circ)}.k-circ .t{stroke:var(--k-circ)}.sw-circ{background:var(--k-circ)}.k-circ .cb{fill:var(--k-circ);opacity:.9}
+.k-aula .fill{fill:var(--k-aula)}.k-aula .t{stroke:var(--k-aula)}.sw-aula{background:var(--k-aula)}.k-aula .cb{fill:var(--k-aula);opacity:.9}
+.k-lab .fill{fill:var(--k-lab)}.k-lab .t{stroke:var(--k-lab)}.sw-lab{background:var(--k-lab)}.k-lab .cb{fill:var(--k-lab);opacity:.9}
+.k-apoyo .fill{fill:var(--k-apoyo)}.k-apoyo .t{stroke:var(--k-apoyo)}.sw-apoyo{background:var(--k-apoyo)}.k-apoyo .cb{fill:var(--k-apoyo);opacity:.9}
+.k-comp .fill{fill:var(--k-comp)}.k-comp .t{stroke:var(--k-comp)}.sw-comp{background:var(--k-comp)}.k-comp .cb{fill:var(--k-comp);opacity:.9}
+.k-taller .fill{fill:var(--k-taller)}.k-taller .t{stroke:var(--k-taller)}.sw-taller{background:var(--k-taller)}.k-taller .cb{fill:var(--k-taller);opacity:.9}
+.k-adm .fill{fill:var(--k-adm)}.k-adm .t{stroke:var(--k-adm)}.sw-adm{background:var(--k-adm)}.k-adm .cb{fill:var(--k-adm);opacity:.9}
+.k-estudio .fill{fill:var(--k-estudio)}.k-estudio .t{stroke:var(--k-estudio)}.sw-estudio{background:var(--k-estudio)}.k-estudio .cb{fill:var(--k-estudio);opacity:.9}
+.k-cafe .fill{fill:var(--k-cafe)}.k-cafe .t{stroke:var(--k-cafe)}.sw-cafe{background:var(--k-cafe)}.k-cafe .cb{fill:var(--k-cafe);opacity:.9}
+.k-magna .fill{fill:var(--k-magna)}.k-magna .t{stroke:var(--k-magna)}.sw-magna{background:var(--k-magna)}.k-magna .cb{fill:var(--k-magna);opacity:.9}
+.k-dep .fill{fill:var(--k-dep)}.k-dep .t{stroke:var(--k-dep)}.sw-dep{background:var(--k-dep)}.k-dep .cb{fill:var(--k-dep);opacity:.9}
+.k-park .fill{fill:var(--k-park)}.k-park .t{stroke:var(--k-park)}.sw-park{background:var(--k-park)}.k-park .cb{fill:var(--k-park);opacity:.9}
+.k-serv .fill{fill:var(--k-serv)}.k-serv .t{stroke:var(--k-serv)}.sw-serv{background:var(--k-serv)}.k-serv .cb{fill:var(--k-serv);opacity:.9}
+.k-libre .fill{fill:var(--k-libre)}.k-libre .t{stroke:var(--k-libre)}.sw-libre{background:var(--k-libre)}.k-libre .cb{fill:var(--k-libre);opacity:.9}
+.k-tol .fill{fill:var(--k-tol)}.k-tol .t{stroke:var(--k-tol)}.sw-tol{background:var(--k-tol)}.k-tol .cb{fill:var(--k-tol);opacity:.9}
+
+/* ---------- adaptación ---------- */
+@media (max-width:1200px){
+  .app{grid-template-columns:230px minmax(0,1fr)}
+  .areas{grid-column:1 / -1;position:static;max-height:none}
+}
+@media (max-width:860px){
+  .tb{grid-template-columns:1fr 1fr}
+  .tb>:first-child{grid-column:1 / -1;border-bottom:1.5px solid var(--ink)}
+  .tb>:nth-child(2){border-left:0}
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static;max-height:none;overflow:visible}
+  .lvls{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px}
+  .lvls li{flex:none;min-width:118px}
+  .lv{grid-template-columns:minmax(0,1fr);border:1px solid var(--line);border-radius:2px;padding:7px 9px}
+  .lvls li:first-child .lv{border-top:1px solid var(--line)}
+  .shaft,.lv-use,.rail-foot{display:none}
+  .kpis{width:100%}
+  .only-m{display:inline}
+}
+@media (prefers-reduced-motion:no-preference){
+  .lv,.chip,.go-btn{transition:background-color .12s,border-color .12s}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="tb">
+    <div>
+      <p class="eyebrow">Facultad de Ingeniería Civil · UNI</p>
+      <h1>Distribución por niveles</h1>
+      <p class="lede">Planta de cada nivel de los dos edificios, con los ambientes del programa, su área y el núcleo de escaleras y ascensor.</p>
+    </div>
+    <div class="tb-cell" id="tb1"></div>
+    <div class="tb-cell" id="tb2"></div>
+  </header>
+
+  <div class="app">
+    <nav class="rail card" aria-label="Edificio y nivel">
+      <div class="seg" id="seg" role="tablist" aria-label="Edificio"></div>
+      <ol class="lvls" id="lvls"></ol>
+      <p class="rail-foot"><span class="a">Escalera</span><span class="b">Ascensor</span></p>
+    </nav>
+
+    <section class="sheet card" aria-labelledby="lvTitle">
+      <div class="sheet-h">
+        <div><h2 id="lvTitle"></h2><p id="lvUse"></p></div>
+        <dl class="kpis" id="kpis"></dl>
+      </div>
+      <figure class="plan" id="plan">
+        <div class="plan-scroll" id="planBox"></div>
+        <figcaption id="cap"></figcaption>
+      </figure>
+      <div class="legend" id="legend" role="group" aria-label="Resaltar por uso"></div>
+      <ul class="notes" id="notes"></ul>
+    </section>
+
+    <aside class="areas card" aria-labelledby="arTitle">
+      <h3 id="arTitle">Cuadro de áreas</h3>
+      <div class="tbl"><table id="areas"></table></div>
+    </aside>
+  </div>
+
+  <section class="sec card" aria-labelledby="sumT">
+    <h3 id="sumT">Resumen del edificio</h3>
+    <div class="tbl"><table id="sum"></table></div>
+  </section>
+
+  <section class="sec card" aria-labelledby="chkT">
+    <h3 id="chkT">Programa mínimo solicitado</h3>
+    <div class="tbl"><table id="chk"></table></div>
+  </section>
+
+  <section class="foot card" aria-labelledby="ftT">
+    <h3 id="ftT" style="margin:0;font:600 13px/1.2 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Notas y supuestos</h3>
+    <ul id="ft"></ul>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const DATA = {"cats":[["cv","Escalera y ascensor"],["sv","SS.HH. y ductos"],["circ","Circulación y hall"],["aula","Aulas"],["lab","Laboratorios"],["apoyo","Vestidor y duchas"],["comp","Cómputo y BIM"],["taller","Aula taller"],["adm","Administración y docentes"],["estudio","Sala de estudio"],["cafe","Cafetería"],["magna","Aula magna"],["dep","Depósitos"],["park","Estacionamiento y rampa"],["serv","Servidumbre (equipos)"],["libre","Área libre"],["tol","Muros y tolerancia"]],"buildings":[{"id":"E1","name":"Edificio 1","W":26.161,"D":15.42,"area":403.4,"levels":[{"id":"S2","name":"Sótano 2","cota":-6.0,"use":"Estacionamiento, cisterna y bombas","c":null,"parking":true,"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Vestíbulo de escalera","cat":"circ","x":0.0,"y":3.65,"w":4.384,"h":1.45,"area":6.36,"prog":false},{"id":3,"name":"Estacionamiento norte A","cat":"park","x":4.384,"y":0.0,"w":7.722,"h":5.1,"area":39.38,"prog":true,"furn":"parking","short":"Estac. A","row":"Estacionamiento","sector":"A"},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.106,"y":0.0,"w":2.192,"h":3.65,"area":8.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Vestíbulo","cat":"circ","x":12.106,"y":3.65,"w":2.192,"h":1.45,"area":3.18,"prog":false},{"id":6,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":7,"name":"Vestíbulo de ascensor","cat":"circ","x":14.298,"y":3.5,"w":2.0,"h":1.6,"area":3.2,"prog":false},{"id":8,"name":"Estacionamiento norte B","cat":"park","x":16.298,"y":0.0,"w":5.479,"h":5.1,"area":27.95,"prog":true,"furn":"parking","short":"Estac. B","row":"Estacionamiento","sector":"B"},{"id":9,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":10,"name":"Vestíbulo de escalera","cat":"circ","x":21.777,"y":3.65,"w":4.384,"h":1.45,"area":6.36,"prog":false},{"id":11,"name":"Rampa vehicular (tramo interior)","cat":"park","x":0.0,"y":5.1,"w":5.329,"h":10.32,"area":55.0,"prog":true,"obs":"El tramo exterior se desarrolla en el área libre (pendiente ≤ 15 %)","furn":"ramp","short":"Rampa"},{"id":12,"name":"Estacionamiento (zona central)","cat":"park","x":5.329,"y":5.1,"w":15.017,"h":10.32,"area":154.98,"prog":true,"furn":"parking","row":"Estacionamiento","sector":"C"},{"id":13,"name":"Cisterna y cuarto de bombas","cat":"serv","x":20.347,"y":5.1,"w":5.814,"h":10.32,"area":60.0,"prog":true,"obs":"Piso de servidumbre","furn":"tankroom","short":"Cisterna y bombas"}],"W":26.161,"D":15.42,"stalls":[{"x":5.337,"y":10.42,"w":2.5,"h":5.0},{"x":7.837,"y":10.42,"w":2.5,"h":5.0},{"x":10.337,"y":10.42,"w":2.5,"h":5.0},{"x":12.837,"y":10.42,"w":2.5,"h":5.0},{"x":15.337,"y":10.42,"w":2.5,"h":5.0},{"x":17.837,"y":10.42,"w":2.5,"h":5.0},{"x":5.379,"y":0.05,"w":2.5,"h":5.0},{"x":7.879,"y":0.05,"w":2.5,"h":5.0},{"x":16.348,"y":0.05,"w":2.5,"h":5.0}],"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,9],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Estacionamiento (9 plazas)","cat":"park","cant":1,"unit":222.3,"total":222.3,"aforo":0,"ids":[3,8,12],"obs":"","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":8.0,"total":8.0,"aforo":0,"ids":[4],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[6],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"Rampa vehicular (tramo interior)","cat":"park","cant":1,"unit":55.0,"total":55.0,"aforo":0,"ids":[11],"obs":"El tramo exterior se desarrolla en el área libre (pendiente ≤ 15 %)","vent":null},{"name":"Cisterna y cuarto de bombas","cat":"serv","cant":1,"unit":60.0,"total":60.0,"aforo":0,"ids":[13],"obs":"Piso de servidumbre","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":19.1,"aforo":0,"ids":[2,5,7,10],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":-0.0,"aforo":0,"ids":[],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":384.3,"circ":19.1,"tol":-0.0,"libre":0.0,"aforo":0,"plazas":9},"cats":{"cv":39.0,"circ":19.1,"park":277.3,"sv":8.0,"serv":60.0},"entrance":null,"notes":["Se dibujan 9 plazas (módulo 2.5 × 5.0 m) con pasillo de maniobra de 5.3 m.","La rampa se muestra solo en su tramo interior; el resto se desarrolla en el área libre (pendiente ≤ 15 %).","Para más plazas, el sótano puede extenderse bajo el área libre."],"bruta":403.4},{"id":"S1","name":"Sótano 1","cota":-3.0,"use":"Estacionamiento, grupo electrógeno y depósito","c":null,"parking":true,"entrance":{"side":"W","label":"Acceso vehicular","a":5.1,"b":15.42},"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Vestíbulo de escalera","cat":"circ","x":0.0,"y":3.65,"w":4.384,"h":1.45,"area":6.36,"prog":false},{"id":3,"name":"Estacionamiento norte A","cat":"park","x":4.384,"y":0.0,"w":7.722,"h":5.1,"area":39.38,"prog":true,"furn":"parking","short":"Estac. A","row":"Estacionamiento","sector":"A"},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.106,"y":0.0,"w":2.192,"h":3.65,"area":8.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Vestíbulo","cat":"circ","x":12.106,"y":3.65,"w":2.192,"h":1.45,"area":3.18,"prog":false},{"id":6,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":7,"name":"Vestíbulo de ascensor","cat":"circ","x":14.298,"y":3.5,"w":2.0,"h":1.6,"area":3.2,"prog":false},{"id":8,"name":"Estacionamiento norte B","cat":"park","x":16.298,"y":0.0,"w":5.479,"h":5.1,"area":27.95,"prog":true,"furn":"parking","short":"Estac. B","row":"Estacionamiento","sector":"B"},{"id":9,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":10,"name":"Vestíbulo de escalera","cat":"circ","x":21.777,"y":3.65,"w":4.384,"h":1.45,"area":6.36,"prog":false},{"id":11,"name":"Rampa vehicular (tramo interior)","cat":"park","x":0.0,"y":5.1,"w":5.329,"h":10.32,"area":55.0,"prog":true,"obs":"El tramo exterior se desarrolla en el área libre (pendiente ≤ 15 %)","furn":"ramp","short":"Rampa"},{"id":12,"name":"Estacionamiento (zona central)","cat":"park","x":5.329,"y":5.1,"w":15.017,"h":10.32,"area":154.98,"prog":true,"furn":"parking","row":"Estacionamiento","sector":"C"},{"id":13,"name":"Grupo electrógeno y tableros","cat":"serv","x":20.347,"y":5.1,"w":5.814,"h":6.02,"area":35.0,"prog":true,"obs":"Piso de servidumbre","furn":"genset","short":"Grupo electrógeno"},{"id":14,"name":"Depósito general","cat":"dep","x":20.347,"y":11.12,"w":5.814,"h":4.3,"area":25.0,"prog":true,"furn":"store"}],"W":26.161,"D":15.42,"stalls":[{"x":5.337,"y":10.42,"w":2.5,"h":5.0},{"x":7.837,"y":10.42,"w":2.5,"h":5.0},{"x":10.337,"y":10.42,"w":2.5,"h":5.0},{"x":12.837,"y":10.42,"w":2.5,"h":5.0},{"x":15.337,"y":10.42,"w":2.5,"h":5.0},{"x":17.837,"y":10.42,"w":2.5,"h":5.0},{"x":5.379,"y":0.05,"w":2.5,"h":5.0},{"x":7.879,"y":0.05,"w":2.5,"h":5.0},{"x":16.348,"y":0.05,"w":2.5,"h":5.0}],"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,9],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Estacionamiento (9 plazas)","cat":"park","cant":1,"unit":222.3,"total":222.3,"aforo":0,"ids":[3,8,12],"obs":"","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":8.0,"total":8.0,"aforo":0,"ids":[4],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[6],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"Rampa vehicular (tramo interior)","cat":"park","cant":1,"unit":55.0,"total":55.0,"aforo":0,"ids":[11],"obs":"El tramo exterior se desarrolla en el área libre (pendiente ≤ 15 %)","vent":null},{"name":"Grupo electrógeno y tableros","cat":"serv","cant":1,"unit":35.0,"total":35.0,"aforo":0,"ids":[13],"obs":"Piso de servidumbre","vent":null},{"name":"Depósito general","cat":"dep","cant":1,"unit":25.0,"total":25.0,"aforo":0,"ids":[14],"obs":"","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":19.1,"aforo":0,"ids":[2,5,7,10],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":-0.0,"aforo":0,"ids":[],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":384.3,"circ":19.1,"tol":-0.0,"libre":0.0,"aforo":0,"plazas":9},"cats":{"cv":39.0,"circ":19.1,"park":277.3,"sv":8.0,"serv":35.0,"dep":25.0},"notes":["Se dibujan 9 plazas (módulo 2.5 × 5.0 m) con pasillo de maniobra de 5.3 m.","Acceso vehicular por el lado oeste, desde la rampa exterior.","Piso de servidumbre: grupo electrógeno, tableros y depósito general."],"bruta":403.4},{"id":"P1","name":"Piso 1","cota":0.0,"use":"Hall, sala de estudio y administración","c":2.6,"entrance":{"side":"S","label":"Ingreso principal","a":13.086,"b":22.683},"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Oficina de coordinación","cat":"adm","x":4.384,"y":0.0,"w":8.219,"h":3.65,"area":30.0,"prog":true,"aforo":4,"win":true},{"id":3,"name":"Tolerancia","cat":"tol","x":12.603,"y":0.0,"w":0.051,"h":3.65,"area":0.19,"prog":false},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.654,"y":0.0,"w":1.644,"h":3.65,"area":6.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":6,"name":"Tolerancia","cat":"tol","x":14.298,"y":3.5,"w":2.0,"h":0.15,"area":0.3,"prog":false},{"id":7,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":16.298,"y":0.0,"w":5.479,"h":3.65,"area":20.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":8,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":9,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.65,"w":11.298,"h":2.6,"area":29.37,"prog":false},{"id":10,"name":"Hall de ascensor","cat":"circ","x":11.298,"y":3.65,"w":8.0,"h":2.6,"area":20.8,"prog":false,"furn":"hall"},{"id":11,"name":"Circulación horizontal","cat":"circ","x":19.298,"y":3.65,"w":6.863,"h":2.6,"area":17.84,"prog":false},{"id":12,"name":"Sala de estudio","cat":"estudio","x":0.0,"y":6.25,"w":13.086,"h":9.17,"area":120.0,"prog":true,"aforo":60,"obs":"2 m²/persona","furn":"study","win":true,"vent":"nat"},{"id":13,"name":"Hall de ingreso y distribución","cat":"circ","x":13.086,"y":6.25,"w":9.597,"h":9.17,"area":88.0,"prog":true,"obs":"Ingreso principal","furn":"hall","short":"Hall de ingreso"},{"id":14,"name":"Recepción y control","cat":"adm","x":22.683,"y":6.25,"w":3.478,"h":4.313,"area":15.0,"prog":true,"aforo":2,"short":"Recepción","win":true},{"id":15,"name":"Espera y control de acceso","cat":"circ","x":22.683,"y":10.563,"w":3.478,"h":4.857,"area":16.89,"prog":false}],"W":26.161,"D":15.42,"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,8],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Oficina de coordinación","cat":"adm","cant":1,"unit":30.0,"total":30.0,"aforo":4,"ids":[2],"obs":"","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[4],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[5],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":20.0,"total":20.0,"aforo":0,"ids":[7],"obs":"Según aforo del nivel","vent":null},{"name":"Sala de estudio","cat":"estudio","cant":1,"unit":120.0,"total":120.0,"aforo":60,"ids":[12],"obs":"2 m²/persona","vent":"nat"},{"name":"Hall de ingreso y distribución","cat":"circ","cant":1,"unit":88.0,"total":88.0,"aforo":0,"ids":[13],"obs":"Ingreso principal","vent":null},{"name":"Recepción y control","cat":"adm","cant":1,"unit":15.0,"total":15.0,"aforo":2,"ids":[14],"obs":"","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":84.9,"aforo":0,"ids":[9,10,11,15],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.5,"aforo":0,"ids":[3,6],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":318.0,"circ":84.9,"tol":0.5,"libre":0.0,"aforo":66,"plazas":0},"cats":{"cv":39.0,"adm":45.0,"tol":0.5,"sv":26.0,"circ":172.9,"estudio":120.0},"notes":["Ingreso principal por el hall, que reparte a la sala de estudio, la recepción y el núcleo de escaleras y ascensor.","La cafetería de 1.er piso está en el Edificio 2, conectada por el hall de acceso."],"bruta":403.4},{"id":"P2","name":"Piso 2","cota":3.0,"use":"Laboratorio 1 y aula de cómputo","c":1.4377590480912232,"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Vestidor con duchas","cat":"apoyo","x":4.384,"y":0.0,"w":8.219,"h":3.65,"area":30.0,"prog":true,"obs":"2 duchas (mínimo 1 por cada 60 al.)","furn":"lockers","row":"Vestidor con duchas","win":true},{"id":3,"name":"Tolerancia","cat":"tol","x":12.603,"y":0.0,"w":0.051,"h":3.65,"area":0.19,"prog":false},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.654,"y":0.0,"w":1.644,"h":3.65,"area":6.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":6,"name":"Tolerancia","cat":"tol","x":14.298,"y":3.5,"w":2.0,"h":0.15,"area":0.3,"prog":false},{"id":7,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":16.298,"y":0.0,"w":5.479,"h":3.65,"area":20.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":8,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":9,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.65,"w":11.798,"h":1.438,"area":16.96,"prog":false},{"id":10,"name":"Hall de ascensor","cat":"circ","x":11.798,"y":3.65,"w":7.0,"h":1.438,"area":10.06,"prog":false,"furn":"hall"},{"id":11,"name":"Circulación horizontal","cat":"circ","x":18.798,"y":3.65,"w":7.363,"h":1.438,"area":10.59,"prog":false},{"id":12,"name":"Laboratorio 1 (40 al.)","cat":"lab","x":0.0,"y":5.088,"w":19.357,"h":10.332,"area":200.0,"prog":true,"aforo":40,"obs":"5 m²/alumno; ventilación natural + extracción","furn":"lab","row":"Laboratorio (40 al.)","win":true,"vent":"nat+mec"},{"id":13,"name":"Aula de cómputo","cat":"comp","x":19.357,"y":5.088,"w":6.775,"h":10.332,"area":70.0,"prog":true,"aforo":35,"obs":"2 m²/PC","furn":"pcs","row":"Aula de cómputo (35 PC)","win":true,"vent":"nat"},{"id":14,"name":"Tolerancia","cat":"tol","x":26.132,"y":5.088,"w":0.029,"h":10.332,"area":0.3,"prog":false}],"W":26.161,"D":15.42,"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,8],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Vestidor con duchas","cat":"apoyo","cant":1,"unit":30.0,"total":30.0,"aforo":0,"ids":[2],"obs":"2 duchas (mínimo 1 por cada 60 al.)","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[4],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[5],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":20.0,"total":20.0,"aforo":0,"ids":[7],"obs":"Según aforo del nivel","vent":null},{"name":"Laboratorio (40 al.)","cat":"lab","cant":1,"unit":200.0,"total":200.0,"aforo":40,"ids":[12],"obs":"5 m²/alumno; ventilación natural + extracción","vent":"nat+mec"},{"name":"Aula de cómputo (35 PC)","cat":"comp","cant":1,"unit":70.0,"total":70.0,"aforo":35,"ids":[13],"obs":"2 m²/PC","vent":"nat"},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":37.6,"aforo":0,"ids":[9,10,11],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.8,"aforo":0,"ids":[3,6,14],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":365.0,"circ":37.6,"tol":0.8,"libre":0.0,"aforo":75,"plazas":0},"cats":{"cv":39.0,"apoyo":30.0,"tol":0.8,"sv":26.0,"circ":37.6,"lab":200.0,"comp":70.0},"entrance":null,"notes":["Laboratorio con ventanas en la fachada frontal y extracción mecánica por el ducto del núcleo.","Vestidor con 2 duchas junto al laboratorio (mínimo 1 por cada 60 alumnos).","Laboratorios y cómputo en los primeros pisos, como pide el programa.","Circulación ajustada (9 % de la huella): verificar ancho mínimo de pasillos y evacuación."],"bruta":403.4},{"id":"P3","name":"Piso 3","cota":6.0,"use":"Laboratorio 2 y aula BIM","c":1.4377590480912232,"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Vestidor con duchas","cat":"apoyo","x":4.384,"y":0.0,"w":8.219,"h":3.65,"area":30.0,"prog":true,"obs":"2 duchas (mínimo 1 por cada 60 al.)","furn":"lockers","row":"Vestidor con duchas","win":true},{"id":3,"name":"Tolerancia","cat":"tol","x":12.603,"y":0.0,"w":0.051,"h":3.65,"area":0.19,"prog":false},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.654,"y":0.0,"w":1.644,"h":3.65,"area":6.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":6,"name":"Tolerancia","cat":"tol","x":14.298,"y":3.5,"w":2.0,"h":0.15,"area":0.3,"prog":false},{"id":7,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":16.298,"y":0.0,"w":5.479,"h":3.65,"area":20.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":8,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":9,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.65,"w":11.798,"h":1.438,"area":16.96,"prog":false},{"id":10,"name":"Hall de ascensor","cat":"circ","x":11.798,"y":3.65,"w":7.0,"h":1.438,"area":10.06,"prog":false,"furn":"hall"},{"id":11,"name":"Circulación horizontal","cat":"circ","x":18.798,"y":3.65,"w":7.363,"h":1.438,"area":10.59,"prog":false},{"id":12,"name":"Laboratorio 2 (40 al.)","cat":"lab","x":0.0,"y":5.088,"w":19.357,"h":10.332,"area":200.0,"prog":true,"aforo":40,"obs":"5 m²/alumno; ventilación natural + extracción","furn":"lab","row":"Laboratorio (40 al.)","win":true,"vent":"nat+mec"},{"id":13,"name":"Aula BIM","cat":"comp","x":19.357,"y":5.088,"w":6.775,"h":10.332,"area":70.0,"prog":true,"aforo":35,"obs":"2 m²/PC","furn":"pcs","row":"Aula BIM (35 PC)","win":true,"vent":"nat"},{"id":14,"name":"Tolerancia","cat":"tol","x":26.132,"y":5.088,"w":0.029,"h":10.332,"area":0.3,"prog":false}],"W":26.161,"D":15.42,"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,8],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Vestidor con duchas","cat":"apoyo","cant":1,"unit":30.0,"total":30.0,"aforo":0,"ids":[2],"obs":"2 duchas (mínimo 1 por cada 60 al.)","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[4],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[5],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":20.0,"total":20.0,"aforo":0,"ids":[7],"obs":"Según aforo del nivel","vent":null},{"name":"Laboratorio (40 al.)","cat":"lab","cant":1,"unit":200.0,"total":200.0,"aforo":40,"ids":[12],"obs":"5 m²/alumno; ventilación natural + extracción","vent":"nat+mec"},{"name":"Aula BIM (35 PC)","cat":"comp","cant":1,"unit":70.0,"total":70.0,"aforo":35,"ids":[13],"obs":"2 m²/PC","vent":"nat"},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":37.6,"aforo":0,"ids":[9,10,11],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.8,"aforo":0,"ids":[3,6,14],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":365.0,"circ":37.6,"tol":0.8,"libre":0.0,"aforo":75,"plazas":0},"cats":{"cv":39.0,"apoyo":30.0,"tol":0.8,"sv":26.0,"circ":37.6,"lab":200.0,"comp":70.0},"entrance":null,"notes":["Laboratorio con ventanas en la fachada frontal y extracción mecánica por el ducto del núcleo.","El aula BIM comparte nivel con el laboratorio 2 y mira a la fachada frontal.","Circulación ajustada (9 % de la huella): verificar ancho mínimo de pasillos y evacuación."],"bruta":403.4},{"id":"P4","name":"Piso 4","cota":9.0,"use":"Laboratorio 3, oficina y depósito de impresoras","c":2.366628656420426,"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Vestidor con duchas","cat":"apoyo","x":4.384,"y":0.0,"w":8.219,"h":3.65,"area":30.0,"prog":true,"obs":"2 duchas (mínimo 1 por cada 60 al.)","furn":"lockers","row":"Vestidor con duchas","win":true},{"id":3,"name":"Tolerancia","cat":"tol","x":12.603,"y":0.0,"w":0.051,"h":3.65,"area":0.19,"prog":false},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.654,"y":0.0,"w":1.644,"h":3.65,"area":6.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":6,"name":"Tolerancia","cat":"tol","x":14.298,"y":3.5,"w":2.0,"h":0.15,"area":0.3,"prog":false},{"id":7,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":16.298,"y":0.0,"w":5.479,"h":3.65,"area":20.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":8,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":9,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.65,"w":11.798,"h":2.367,"area":27.92,"prog":false},{"id":10,"name":"Hall de ascensor","cat":"circ","x":11.798,"y":3.65,"w":7.0,"h":2.367,"area":16.57,"prog":false,"furn":"hall"},{"id":11,"name":"Circulación horizontal","cat":"circ","x":18.798,"y":3.65,"w":7.363,"h":2.367,"area":17.43,"prog":false},{"id":12,"name":"Laboratorio 3 (40 al.)","cat":"lab","x":0.0,"y":6.017,"w":21.269,"h":9.403,"area":200.0,"prog":true,"aforo":40,"obs":"5 m²/alumno; ventilación natural + extracción","furn":"lab","row":"Laboratorio (40 al.)","win":true,"vent":"nat+mec"},{"id":13,"name":"Oficina de laboratorios","cat":"adm","x":21.269,"y":6.017,"w":4.892,"h":4.088,"area":20.0,"prog":true,"aforo":3,"win":true},{"id":14,"name":"Depósito con impresoras 2D/3D","cat":"dep","x":21.269,"y":10.105,"w":4.892,"h":5.111,"area":25.0,"prog":true,"obs":"Ventilado, tomas dedicadas","furn":"printers","short":"Depósito 2D/3D"},{"id":15,"name":"Tolerancia","cat":"tol","x":21.269,"y":15.216,"w":4.892,"h":0.204,"area":1.0,"prog":false}],"W":26.161,"D":15.42,"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,8],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Vestidor con duchas","cat":"apoyo","cant":1,"unit":30.0,"total":30.0,"aforo":0,"ids":[2],"obs":"2 duchas (mínimo 1 por cada 60 al.)","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[4],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[5],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":20.0,"total":20.0,"aforo":0,"ids":[7],"obs":"Según aforo del nivel","vent":null},{"name":"Laboratorio (40 al.)","cat":"lab","cant":1,"unit":200.0,"total":200.0,"aforo":40,"ids":[12],"obs":"5 m²/alumno; ventilación natural + extracción","vent":"nat+mec"},{"name":"Oficina de laboratorios","cat":"adm","cant":1,"unit":20.0,"total":20.0,"aforo":3,"ids":[13],"obs":"","vent":null},{"name":"Depósito con impresoras 2D/3D","cat":"dep","cant":1,"unit":25.0,"total":25.0,"aforo":0,"ids":[14],"obs":"Ventilado, tomas dedicadas","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":61.9,"aforo":0,"ids":[9,10,11],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":1.5,"aforo":0,"ids":[3,6,15],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":340.0,"circ":61.9,"tol":1.5,"libre":0.0,"aforo":43,"plazas":0},"cats":{"cv":39.0,"apoyo":30.0,"tol":1.5,"sv":26.0,"circ":61.9,"lab":200.0,"adm":20.0,"dep":25.0},"entrance":null,"notes":["Las impresoras 2D y 3D van en el depósito, con ventilación y tomacorrientes dedicados.","Laboratorio con extracción mecánica por el ducto del núcleo."],"bruta":403.4},{"id":"P5","name":"Piso 5","cota":12.0,"use":"Aula taller con oficina y depósito","c":2.550109072880515,"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Sala de docentes","cat":"adm","x":4.384,"y":0.0,"w":8.219,"h":3.65,"area":30.0,"prog":true,"aforo":8,"win":true},{"id":3,"name":"Tolerancia","cat":"tol","x":12.603,"y":0.0,"w":0.051,"h":3.65,"area":0.19,"prog":false},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.654,"y":0.0,"w":1.644,"h":3.65,"area":6.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":6,"name":"Tolerancia","cat":"tol","x":14.298,"y":3.5,"w":2.0,"h":0.15,"area":0.3,"prog":false},{"id":7,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":16.298,"y":0.0,"w":5.479,"h":3.65,"area":20.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":8,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":9,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.65,"w":11.798,"h":2.55,"area":30.09,"prog":false},{"id":10,"name":"Hall de ascensor","cat":"circ","x":11.798,"y":3.65,"w":7.0,"h":2.55,"area":17.85,"prog":false,"furn":"hall"},{"id":11,"name":"Circulación horizontal","cat":"circ","x":18.798,"y":3.65,"w":7.363,"h":2.55,"area":18.78,"prog":false},{"id":12,"name":"Aula taller (40 al.)","cat":"taller","x":0.0,"y":6.2,"w":21.692,"h":9.22,"area":200.0,"prog":true,"aforo":40,"obs":"5 m²/alumno; 5 mesas de 1.2 x 1.5 x 1.8 m y ecran","furn":"workshop","win":true,"vent":"nat"},{"id":13,"name":"Oficina del taller","cat":"taller","x":21.692,"y":6.2,"w":4.469,"h":3.357,"area":15.0,"prog":true,"aforo":2,"obs":"Junto al aula taller","win":true},{"id":14,"name":"Depósito del taller","cat":"taller","x":21.692,"y":9.557,"w":4.469,"h":5.595,"area":25.0,"prog":true,"obs":"Materiales, maquetas e impresoras 2D/3D","furn":"printers","short":"Depósito taller"},{"id":15,"name":"Tolerancia","cat":"tol","x":21.692,"y":15.151,"w":4.469,"h":0.269,"area":1.2,"prog":false}],"W":26.161,"D":15.42,"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,8],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Sala de docentes","cat":"adm","cant":1,"unit":30.0,"total":30.0,"aforo":8,"ids":[2],"obs":"","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[4],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[5],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":20.0,"total":20.0,"aforo":0,"ids":[7],"obs":"Según aforo del nivel","vent":null},{"name":"Aula taller (40 al.)","cat":"taller","cant":1,"unit":200.0,"total":200.0,"aforo":40,"ids":[12],"obs":"5 m²/alumno; 5 mesas de 1.2 x 1.5 x 1.8 m y ecran","vent":"nat"},{"name":"Oficina del taller","cat":"taller","cant":1,"unit":15.0,"total":15.0,"aforo":2,"ids":[13],"obs":"Junto al aula taller","vent":null},{"name":"Depósito del taller","cat":"taller","cant":1,"unit":25.0,"total":25.0,"aforo":0,"ids":[14],"obs":"Materiales, maquetas e impresoras 2D/3D","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":66.7,"aforo":0,"ids":[9,10,11],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":1.7,"aforo":0,"ids":[3,6,15],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":335.0,"circ":66.7,"tol":1.7,"libre":0.0,"aforo":50,"plazas":0},"cats":{"cv":39.0,"adm":30.0,"tol":1.7,"sv":26.0,"circ":66.7,"taller":240.0},"entrance":null,"notes":["Aula taller para 40 alumnos con 5 mesas de 1.2 × 1.5 × 1.8 m y ecran.","La oficina y el depósito comparten muro con el aula taller."],"bruta":403.4},{"id":"P6","name":"Piso 6","cota":15.0,"use":"3 aulas teóricas y sala de reuniones","c":3.7350867625185913,"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Zona de estar","cat":"circ","x":4.384,"y":0.0,"w":8.27,"h":3.65,"area":30.19,"prog":false,"furn":"lounge"},{"id":3,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.654,"y":0.0,"w":1.644,"h":3.65,"area":6.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":4,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":5,"name":"Tolerancia","cat":"tol","x":14.298,"y":3.5,"w":2.0,"h":0.15,"area":0.3,"prog":false},{"id":6,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":16.298,"y":0.0,"w":5.479,"h":3.65,"area":20.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":7,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":8,"name":"Galería de circulación y estar","cat":"circ","x":0.0,"y":3.65,"w":11.298,"h":3.735,"area":42.2,"prog":false},{"id":9,"name":"Hall de ascensor","cat":"circ","x":11.298,"y":3.65,"w":8.0,"h":3.735,"area":29.88,"prog":false,"furn":"hall"},{"id":10,"name":"Galería de circulación y estar","cat":"circ","x":19.298,"y":3.65,"w":6.863,"h":3.735,"area":25.63,"prog":false},{"id":11,"name":"Aula teórica 1","cat":"aula","x":0.0,"y":7.385,"w":7.467,"h":8.035,"area":60.0,"prog":true,"aforo":40,"obs":"1.5 m²/alumno","furn":"seats","row":"Aula teórica (40 al.)","win":true,"vent":"nat"},{"id":12,"name":"Aula teórica 2","cat":"aula","x":7.467,"y":7.385,"w":7.467,"h":8.035,"area":60.0,"prog":true,"aforo":40,"obs":"1.5 m²/alumno","furn":"seats","row":"Aula teórica (40 al.)","win":true,"vent":"nat"},{"id":13,"name":"Aula teórica 3","cat":"aula","x":14.935,"y":7.385,"w":7.467,"h":8.035,"area":60.0,"prog":true,"aforo":40,"obs":"1.5 m²/alumno","furn":"seats","row":"Aula teórica (40 al.)","win":true,"vent":"nat"},{"id":14,"name":"Sala de reuniones docentes","cat":"adm","x":22.402,"y":7.385,"w":3.734,"h":8.035,"area":30.0,"prog":true,"aforo":12,"win":true},{"id":15,"name":"Tolerancia","cat":"tol","x":26.136,"y":7.385,"w":0.025,"h":8.035,"area":0.2,"prog":false}],"W":26.161,"D":15.42,"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,7],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[3],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[4],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":20.0,"total":20.0,"aforo":0,"ids":[6],"obs":"Según aforo del nivel","vent":null},{"name":"Aula teórica (40 al.)","cat":"aula","cant":3,"unit":60.0,"total":180.0,"aforo":120,"ids":[11,12,13],"obs":"1.5 m²/alumno","vent":"nat"},{"name":"Sala de reuniones docentes","cat":"adm","cant":1,"unit":30.0,"total":30.0,"aforo":12,"ids":[14],"obs":"","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":127.9,"aforo":0,"ids":[2,8,9,10],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.5,"aforo":0,"ids":[5,15],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":275.0,"circ":127.9,"tol":0.5,"libre":0.0,"aforo":132,"plazas":0},"cats":{"cv":39.0,"circ":127.9,"sv":26.0,"tol":0.5,"aula":180.0,"adm":30.0},"entrance":null,"notes":["Las tres aulas teóricas miran a la fachada frontal y ventilan también hacia la galería.","La galería de 3.7 m de ancho sirve también de zona de estar y estudio informal."],"bruta":403.4},{"id":"P7","name":"Piso 7","cota":18.0,"use":"Aula magna de 60 personas, foyer y terraza","c":2.0111353495290025,"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Depósito de mobiliario","cat":"dep","x":4.384,"y":0.0,"w":4.11,"h":3.65,"area":15.0,"prog":true,"furn":"store","short":"Depósito"},{"id":3,"name":"Camerino","cat":"magna","x":8.493,"y":0.0,"w":4.11,"h":3.65,"area":15.0,"prog":true,"furn":"lockers","win":true},{"id":4,"name":"Tolerancia","cat":"tol","x":12.603,"y":0.0,"w":0.051,"h":3.65,"area":0.19,"prog":false},{"id":5,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":12.654,"y":0.0,"w":1.644,"h":3.65,"area":6.0,"prog":true,"obs":"Incluye ducto de extracción","furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":6,"name":"Ascensor accesible","cat":"cv","x":14.298,"y":0.0,"w":2.0,"h":3.5,"area":7.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":7,"name":"Tolerancia","cat":"tol","x":14.298,"y":3.5,"w":2.0,"h":0.15,"area":0.3,"prog":false},{"id":8,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":16.298,"y":0.0,"w":5.479,"h":3.65,"area":20.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":9,"name":"Escalera de evacuación 2","cat":"cv","x":21.777,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 2","row":"Escalera de evacuación protegida","win":true},{"id":10,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.65,"w":11.798,"h":2.011,"area":23.73,"prog":false},{"id":11,"name":"Hall de ascensor","cat":"circ","x":11.798,"y":3.65,"w":7.0,"h":2.011,"area":14.08,"prog":false,"furn":"hall"},{"id":12,"name":"Circulación horizontal","cat":"circ","x":18.798,"y":3.65,"w":7.363,"h":2.011,"area":14.81,"prog":false},{"id":13,"name":"Foyer","cat":"circ","x":0.0,"y":5.661,"w":4.099,"h":9.759,"area":40.0,"prog":true,"furn":"hall"},{"id":14,"name":"Aula magna (60 personas)","cat":"magna","x":4.099,"y":5.661,"w":11.784,"h":7.637,"area":90.0,"prog":true,"aforo":60,"obs":"Ventilación natural + extracción","furn":"auditorium","short":"Aula magna","win":true,"vent":"nat+mec"},{"id":15,"name":"Escenario y cabina","cat":"magna","x":4.099,"y":13.299,"w":11.784,"h":2.121,"area":25.0,"prog":true,"furn":"stage","short":"Escenario"},{"id":16,"name":"Terraza (área libre, no techada)","cat":"libre","x":15.883,"y":5.661,"w":10.247,"h":9.759,"area":100.0,"prog":true,"obs":"Área descubierta","furn":"terrace","short":"Terraza"},{"id":17,"name":"Tolerancia","cat":"tol","x":26.13,"y":5.661,"w":0.031,"h":9.759,"area":0.3,"prog":false}],"W":26.161,"D":15.42,"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":2,"unit":16.0,"total":32.0,"aforo":0,"ids":[1,9],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Depósito de mobiliario","cat":"dep","cant":1,"unit":15.0,"total":15.0,"aforo":0,"ids":[2],"obs":"","vent":null},{"name":"Camerino","cat":"magna","cant":1,"unit":15.0,"total":15.0,"aforo":0,"ids":[3],"obs":"","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[5],"obs":"Incluye ducto de extracción","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":7.0,"total":7.0,"aforo":0,"ids":[6],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":20.0,"total":20.0,"aforo":0,"ids":[8],"obs":"Según aforo del nivel","vent":null},{"name":"Foyer","cat":"circ","cant":1,"unit":40.0,"total":40.0,"aforo":0,"ids":[13],"obs":"","vent":null},{"name":"Aula magna (60 personas)","cat":"magna","cant":1,"unit":90.0,"total":90.0,"aforo":60,"ids":[14],"obs":"Ventilación natural + extracción","vent":"nat+mec"},{"name":"Escenario y cabina","cat":"magna","cant":1,"unit":25.0,"total":25.0,"aforo":0,"ids":[15],"obs":"","vent":null},{"name":"Terraza (área libre, no techada)","cat":"libre","cant":1,"unit":100.0,"total":100.0,"aforo":0,"ids":[16],"obs":"Área descubierta","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":52.6,"aforo":0,"ids":[10,11,12],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.8,"aforo":0,"ids":[4,7,17],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":250.0,"circ":52.6,"tol":0.8,"libre":100.0,"aforo":60,"plazas":0},"cats":{"cv":39.0,"dep":15.0,"magna":130.0,"tol":0.8,"sv":26.0,"circ":92.6,"libre":100.0},"entrance":null,"notes":["Último nivel: aula magna de 60 personas con ventilación natural y extracción mecánica.","El foyer y la terraza están junto al aula magna."],"bruta":403.4},{"id":"AZ","name":"Azotea técnica","cota":21.0,"use":"Tanque elevado y equipos de extracción","c":null,"rooms":[{"id":1,"name":"Escalera de evacuación 1","cat":"cv","x":0.0,"y":0.0,"w":4.384,"h":3.65,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":2,"name":"Azotea descubierta","cat":"libre","x":0.0,"y":3.65,"w":4.384,"h":11.77,"area":51.59,"prog":false,"furn":"roof"},{"id":3,"name":"Azotea descubierta","cat":"libre","x":4.384,"y":0.0,"w":12.777,"h":15.42,"area":197.03,"prog":false,"furn":"roof"},{"id":4,"name":"Tanque elevado","cat":"serv","x":17.161,"y":0.0,"w":9.0,"h":6.667,"area":60.0,"prog":true,"obs":"Reserva de agua","furn":"tank"},{"id":5,"name":"Equipos de extracción y ventilación","cat":"serv","x":17.161,"y":6.667,"w":9.0,"h":4.444,"area":40.0,"prog":true,"furn":"fans","short":"Equipos"},{"id":6,"name":"Azotea descubierta","cat":"libre","x":17.161,"y":11.111,"w":9.0,"h":4.309,"area":38.78,"prog":false,"furn":"roof"}],"W":26.161,"D":15.42,"rows":[{"name":"Escalera de evacuación protegida","cat":"cv","cant":1,"unit":16.0,"total":16.0,"aforo":0,"ids":[1],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Tanque elevado","cat":"serv","cant":1,"unit":60.0,"total":60.0,"aforo":0,"ids":[4],"obs":"Reserva de agua","vent":null},{"name":"Equipos de extracción y ventilación","cat":"serv","cant":1,"unit":40.0,"total":40.0,"aforo":0,"ids":[5],"obs":"","vent":null},{"name":"Azotea descubierta (área libre)","cat":"libre","cant":null,"unit":null,"total":287.4,"aforo":0,"ids":[2,3,6],"obs":"Área no techada","vent":null,"kind":"libre"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.0,"aforo":0,"ids":[],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":116.0,"circ":0.0,"tol":0.0,"libre":287.4,"aforo":0,"plazas":0},"cats":{"cv":16.0,"libre":287.4,"serv":100.0},"entrance":null,"notes":["Piso técnico: tanque elevado y equipos de extracción.","Solo llega la escalera; el ascensor termina en el piso 7."],"bruta":403.4}]},{"id":"E2","name":"Edificio 2","W":18.939,"D":9.9,"area":187.5,"levels":[{"id":"S1","name":"Sótano 1","cota":-3.0,"use":"Piso de servidumbre: depósito y equipos","c":1.5,"rooms":[{"id":1,"name":"Cuarto de residuos y limpieza","cat":"serv","x":0.0,"y":0.0,"w":5.333,"h":3.0,"area":16.0,"prog":true,"furn":"store","short":"Residuos y limpieza"},{"id":2,"name":"Tolerancia","cat":"tol","x":5.333,"y":0.0,"w":0.273,"h":3.0,"area":0.82,"prog":false},{"id":3,"name":"Cuarto de comunicaciones","cat":"serv","x":5.606,"y":0.0,"w":4.667,"h":3.0,"area":14.0,"prog":true,"furn":"store","short":"Comunicaciones"},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":10.273,"y":0.0,"w":1.333,"h":3.0,"area":4.0,"prog":true,"furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Ascensor accesible","cat":"cv","x":11.606,"y":0.0,"w":2.0,"h":3.0,"area":6.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":6,"name":"Escalera de evacuación 1","cat":"cv","x":13.606,"y":0.0,"w":5.333,"h":3.0,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":7,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.0,"w":10.106,"h":1.5,"area":15.16,"prog":false},{"id":8,"name":"Hall de ascensor","cat":"circ","x":10.106,"y":3.0,"w":5.0,"h":1.5,"area":7.5,"prog":false,"furn":"hall"},{"id":9,"name":"Circulación horizontal","cat":"circ","x":15.106,"y":3.0,"w":3.833,"h":1.5,"area":5.75,"prog":false},{"id":10,"name":"Depósito general","cat":"dep","x":0.0,"y":4.5,"w":12.963,"h":5.4,"area":70.0,"prog":true,"obs":"Mobiliario, equipos y repuestos","furn":"store"},{"id":11,"name":"Cuarto de bombas y tablero general","cat":"serv","x":12.963,"y":4.5,"w":5.556,"h":5.4,"area":30.0,"prog":true,"obs":"Piso de servidumbre","furn":"genset","short":"Bombas y tablero"},{"id":12,"name":"Tolerancia","cat":"tol","x":18.519,"y":4.5,"w":0.421,"h":5.4,"area":2.27,"prog":false}],"W":18.939,"D":9.9,"rows":[{"name":"Cuarto de residuos y limpieza","cat":"serv","cant":1,"unit":16.0,"total":16.0,"aforo":0,"ids":[1],"obs":"","vent":null},{"name":"Cuarto de comunicaciones","cat":"serv","cant":1,"unit":14.0,"total":14.0,"aforo":0,"ids":[3],"obs":"","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":4.0,"total":4.0,"aforo":0,"ids":[4],"obs":"","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[5],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"Escalera de evacuación protegida","cat":"cv","cant":1,"unit":16.0,"total":16.0,"aforo":0,"ids":[6],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Depósito general","cat":"dep","cant":1,"unit":70.0,"total":70.0,"aforo":0,"ids":[10],"obs":"Mobiliario, equipos y repuestos","vent":null},{"name":"Cuarto de bombas y tablero general","cat":"serv","cant":1,"unit":30.0,"total":30.0,"aforo":0,"ids":[11],"obs":"Piso de servidumbre","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":28.4,"aforo":0,"ids":[7,8,9],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":3.1,"aforo":0,"ids":[2,12],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":156.0,"circ":28.4,"tol":3.1,"libre":0.0,"aforo":0,"plazas":0},"cats":{"serv":60.0,"tol":3.1,"sv":4.0,"cv":22.0,"circ":28.4,"dep":70.0},"entrance":null,"notes":["Piso de servidumbre: depósito general, bombas y tablero, comunicaciones y residuos.","El estacionamiento queda en los sótanos del Edificio 1."],"bruta":187.5},{"id":"P1","name":"Piso 1","cota":0.0,"use":"Cafetería y hall de acceso","c":2.12688,"entrance":{"side":"W","label":"Ingreso","a":3.0,"b":5.127},"rooms":[{"id":1,"name":"Almacén y despensa","cat":"dep","x":0.0,"y":0.0,"w":4.667,"h":3.0,"area":14.0,"prog":true,"furn":"store","win":true},{"id":2,"name":"Tolerancia","cat":"tol","x":4.667,"y":0.0,"w":0.939,"h":3.0,"area":2.82,"prog":false},{"id":3,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":5.606,"y":0.0,"w":4.667,"h":3.0,"area":14.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":4,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":10.273,"y":0.0,"w":1.333,"h":3.0,"area":4.0,"prog":true,"furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":5,"name":"Ascensor accesible","cat":"cv","x":11.606,"y":0.0,"w":2.0,"h":3.0,"area":6.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":6,"name":"Escalera de evacuación 1","cat":"cv","x":13.606,"y":0.0,"w":5.333,"h":3.0,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":7,"name":"Hall de acceso y ascensor","cat":"circ","x":0.0,"y":3.0,"w":14.105,"h":2.127,"area":30.0,"prog":true,"obs":"Conexión con el Edificio 1","furn":"hall","short":"Hall de acceso","row":"Hall de acceso y ascensor"},{"id":8,"name":"Circulación horizontal","cat":"circ","x":14.105,"y":3.0,"w":4.834,"h":2.127,"area":10.28,"prog":false},{"id":9,"name":"Cafetería","cat":"cafe","x":0.0,"y":5.127,"w":14.665,"h":4.773,"area":70.0,"prog":true,"aforo":45,"obs":"1.5 m²/persona","furn":"cafe","win":true,"vent":"nat"},{"id":10,"name":"Cocina","cat":"cafe","x":14.665,"y":5.127,"w":4.19,"h":4.773,"area":20.0,"prog":true,"aforo":3,"furn":"kitchen","win":true},{"id":11,"name":"Tolerancia","cat":"tol","x":18.856,"y":5.127,"w":0.084,"h":4.773,"area":0.4,"prog":false}],"W":18.939,"D":9.9,"rows":[{"name":"Almacén y despensa","cat":"dep","cant":1,"unit":14.0,"total":14.0,"aforo":0,"ids":[1],"obs":"","vent":null},{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":14.0,"total":14.0,"aforo":0,"ids":[3],"obs":"Según aforo del nivel","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":4.0,"total":4.0,"aforo":0,"ids":[4],"obs":"","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[5],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"Escalera de evacuación protegida","cat":"cv","cant":1,"unit":16.0,"total":16.0,"aforo":0,"ids":[6],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Hall de acceso y ascensor","cat":"circ","cant":1,"unit":30.0,"total":30.0,"aforo":0,"ids":[7],"obs":"Conexión con el Edificio 1","vent":null},{"name":"Cafetería","cat":"cafe","cant":1,"unit":70.0,"total":70.0,"aforo":45,"ids":[9],"obs":"1.5 m²/persona","vent":"nat"},{"name":"Cocina","cat":"cafe","cant":1,"unit":20.0,"total":20.0,"aforo":3,"ids":[10],"obs":"","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":10.3,"aforo":0,"ids":[8],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":3.2,"aforo":0,"ids":[2,11],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":174.0,"circ":10.3,"tol":3.2,"libre":0.0,"aforo":48,"plazas":0},"cats":{"dep":14.0,"tol":3.2,"sv":18.0,"cv":22.0,"circ":40.3,"cafe":90.0},"notes":["Cafetería en el primer piso, junto al ingreso.","El hall de acceso comunica con el Edificio 1."],"bruta":187.5},{"id":"P2","name":"Piso 2","cota":3.0,"use":"Aula de idiomas 1 y sala de práctica","c":2.1,"rooms":[{"id":1,"name":"Zona de estar","cat":"circ","x":0.0,"y":0.0,"w":5.606,"h":3.0,"area":16.82,"prog":false,"furn":"lounge"},{"id":2,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":5.606,"y":0.0,"w":4.667,"h":3.0,"area":14.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":3,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":10.273,"y":0.0,"w":1.333,"h":3.0,"area":4.0,"prog":true,"furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":4,"name":"Ascensor accesible","cat":"cv","x":11.606,"y":0.0,"w":2.0,"h":3.0,"area":6.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":5,"name":"Escalera de evacuación 1","cat":"cv","x":13.606,"y":0.0,"w":5.333,"h":3.0,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":6,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.0,"w":10.106,"h":2.1,"area":21.22,"prog":false},{"id":7,"name":"Hall de ascensor","cat":"circ","x":10.106,"y":3.0,"w":5.0,"h":2.1,"area":10.5,"prog":false,"furn":"hall"},{"id":8,"name":"Circulación horizontal","cat":"circ","x":15.106,"y":3.0,"w":3.833,"h":2.1,"area":8.05,"prog":false},{"id":9,"name":"Aula de idiomas 1 (30 al.)","cat":"aula","x":0.0,"y":5.1,"w":10.417,"h":4.8,"area":50.0,"prog":true,"aforo":30,"obs":"1.5 m²/alumno","furn":"seats","row":"Aula de idiomas (30 al.)","win":true,"vent":"nat"},{"id":10,"name":"Sala de práctica de conversación","cat":"aula","x":10.417,"y":5.1,"w":6.25,"h":4.8,"area":30.0,"prog":true,"aforo":15,"furn":"study","short":"Sala de práctica","win":true},{"id":11,"name":"Depósito","cat":"dep","x":16.667,"y":5.1,"w":2.083,"h":4.8,"area":10.0,"prog":true,"furn":"store"},{"id":12,"name":"Tolerancia","cat":"tol","x":18.75,"y":5.1,"w":0.189,"h":4.8,"area":0.91,"prog":false}],"W":18.939,"D":9.9,"rows":[{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":14.0,"total":14.0,"aforo":0,"ids":[2],"obs":"Según aforo del nivel","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":4.0,"total":4.0,"aforo":0,"ids":[3],"obs":"","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[4],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"Escalera de evacuación protegida","cat":"cv","cant":1,"unit":16.0,"total":16.0,"aforo":0,"ids":[5],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Aula de idiomas (30 al.)","cat":"aula","cant":1,"unit":50.0,"total":50.0,"aforo":30,"ids":[9],"obs":"1.5 m²/alumno","vent":"nat"},{"name":"Sala de práctica de conversación","cat":"aula","cant":1,"unit":30.0,"total":30.0,"aforo":15,"ids":[10],"obs":"","vent":null},{"name":"Depósito","cat":"dep","cant":1,"unit":10.0,"total":10.0,"aforo":0,"ids":[11],"obs":"","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":56.6,"aforo":0,"ids":[1,6,7,8],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.9,"aforo":0,"ids":[12],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":130.0,"circ":56.6,"tol":0.9,"libre":0.0,"aforo":45,"plazas":0},"cats":{"circ":56.6,"sv":18.0,"cv":22.0,"aula":80.0,"dep":10.0,"tol":0.9},"entrance":null,"notes":["Aula de idiomas con su sala de práctica y depósito."],"bruta":187.5},{"id":"P3","name":"Piso 3","cota":6.0,"use":"Aula de idiomas 2 y sala de práctica","c":2.1,"rooms":[{"id":1,"name":"Zona de estar","cat":"circ","x":0.0,"y":0.0,"w":5.606,"h":3.0,"area":16.82,"prog":false,"furn":"lounge"},{"id":2,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":5.606,"y":0.0,"w":4.667,"h":3.0,"area":14.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":3,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":10.273,"y":0.0,"w":1.333,"h":3.0,"area":4.0,"prog":true,"furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":4,"name":"Ascensor accesible","cat":"cv","x":11.606,"y":0.0,"w":2.0,"h":3.0,"area":6.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":5,"name":"Escalera de evacuación 1","cat":"cv","x":13.606,"y":0.0,"w":5.333,"h":3.0,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":6,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.0,"w":10.106,"h":2.1,"area":21.22,"prog":false},{"id":7,"name":"Hall de ascensor","cat":"circ","x":10.106,"y":3.0,"w":5.0,"h":2.1,"area":10.5,"prog":false,"furn":"hall"},{"id":8,"name":"Circulación horizontal","cat":"circ","x":15.106,"y":3.0,"w":3.833,"h":2.1,"area":8.05,"prog":false},{"id":9,"name":"Aula de idiomas 2 (30 al.)","cat":"aula","x":0.0,"y":5.1,"w":10.417,"h":4.8,"area":50.0,"prog":true,"aforo":30,"obs":"1.5 m²/alumno","furn":"seats","row":"Aula de idiomas (30 al.)","win":true,"vent":"nat"},{"id":10,"name":"Sala de práctica de conversación","cat":"aula","x":10.417,"y":5.1,"w":6.25,"h":4.8,"area":30.0,"prog":true,"aforo":15,"furn":"study","short":"Sala de práctica","win":true},{"id":11,"name":"Depósito","cat":"dep","x":16.667,"y":5.1,"w":2.083,"h":4.8,"area":10.0,"prog":true,"furn":"store"},{"id":12,"name":"Tolerancia","cat":"tol","x":18.75,"y":5.1,"w":0.189,"h":4.8,"area":0.91,"prog":false}],"W":18.939,"D":9.9,"rows":[{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":14.0,"total":14.0,"aforo":0,"ids":[2],"obs":"Según aforo del nivel","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":4.0,"total":4.0,"aforo":0,"ids":[3],"obs":"","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[4],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"Escalera de evacuación protegida","cat":"cv","cant":1,"unit":16.0,"total":16.0,"aforo":0,"ids":[5],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Aula de idiomas (30 al.)","cat":"aula","cant":1,"unit":50.0,"total":50.0,"aforo":30,"ids":[9],"obs":"1.5 m²/alumno","vent":"nat"},{"name":"Sala de práctica de conversación","cat":"aula","cant":1,"unit":30.0,"total":30.0,"aforo":15,"ids":[10],"obs":"","vent":null},{"name":"Depósito","cat":"dep","cant":1,"unit":10.0,"total":10.0,"aforo":0,"ids":[11],"obs":"","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":56.6,"aforo":0,"ids":[1,6,7,8],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.9,"aforo":0,"ids":[12],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":130.0,"circ":56.6,"tol":0.9,"libre":0.0,"aforo":45,"plazas":0},"cats":{"circ":56.6,"sv":18.0,"cv":22.0,"aula":80.0,"dep":10.0,"tol":0.9},"entrance":null,"notes":["Aula de idiomas con su sala de práctica y depósito."],"bruta":187.5},{"id":"P4","name":"Piso 4","cota":9.0,"use":"Aula de idiomas 3 y sala de práctica","c":2.1,"rooms":[{"id":1,"name":"Zona de estar","cat":"circ","x":0.0,"y":0.0,"w":5.606,"h":3.0,"area":16.82,"prog":false,"furn":"lounge"},{"id":2,"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","x":5.606,"y":0.0,"w":4.667,"h":3.0,"area":14.0,"prog":true,"obs":"Según aforo del nivel","furn":"wc","short":"SS.HH.","row":"SS.HH. hombres / mujeres / accesible"},{"id":3,"name":"Ductos de instalaciones y ventilación","cat":"sv","x":10.273,"y":0.0,"w":1.333,"h":3.0,"area":4.0,"prog":true,"furn":"duct","short":"Ductos","row":"Ductos de instalaciones y ventilación"},{"id":4,"name":"Ascensor accesible","cat":"cv","x":11.606,"y":0.0,"w":2.0,"h":3.0,"area":6.0,"prog":true,"obs":"Acceso universal (RNE A.120)","furn":"lift","short":"Asc.","row":"Ascensor accesible (cabina camilla)"},{"id":5,"name":"Escalera de evacuación 1","cat":"cv","x":13.606,"y":0.0,"w":5.333,"h":3.0,"area":16.0,"prog":true,"obs":"Protegida, ancho libre ≥ 1.20 m","furn":"stair","short":"Esc. 1","row":"Escalera de evacuación protegida","win":true},{"id":6,"name":"Circulación horizontal","cat":"circ","x":0.0,"y":3.0,"w":10.106,"h":2.1,"area":21.22,"prog":false},{"id":7,"name":"Hall de ascensor","cat":"circ","x":10.106,"y":3.0,"w":5.0,"h":2.1,"area":10.5,"prog":false,"furn":"hall"},{"id":8,"name":"Circulación horizontal","cat":"circ","x":15.106,"y":3.0,"w":3.833,"h":2.1,"area":8.05,"prog":false},{"id":9,"name":"Aula de idiomas 3 (30 al.)","cat":"aula","x":0.0,"y":5.1,"w":10.417,"h":4.8,"area":50.0,"prog":true,"aforo":30,"obs":"1.5 m²/alumno","furn":"seats","row":"Aula de idiomas (30 al.)","win":true,"vent":"nat"},{"id":10,"name":"Sala de práctica de conversación","cat":"aula","x":10.417,"y":5.1,"w":6.25,"h":4.8,"area":30.0,"prog":true,"aforo":15,"furn":"study","short":"Sala de práctica","win":true},{"id":11,"name":"Depósito","cat":"dep","x":16.667,"y":5.1,"w":2.083,"h":4.8,"area":10.0,"prog":true,"furn":"store"},{"id":12,"name":"Tolerancia","cat":"tol","x":18.75,"y":5.1,"w":0.189,"h":4.8,"area":0.91,"prog":false}],"W":18.939,"D":9.9,"rows":[{"name":"SS.HH. hombres / mujeres / accesible","cat":"sv","cant":1,"unit":14.0,"total":14.0,"aforo":0,"ids":[2],"obs":"Según aforo del nivel","vent":null},{"name":"Ductos de instalaciones y ventilación","cat":"sv","cant":1,"unit":4.0,"total":4.0,"aforo":0,"ids":[3],"obs":"","vent":null},{"name":"Ascensor accesible (cabina camilla)","cat":"cv","cant":1,"unit":6.0,"total":6.0,"aforo":0,"ids":[4],"obs":"Acceso universal (RNE A.120)","vent":null},{"name":"Escalera de evacuación protegida","cat":"cv","cant":1,"unit":16.0,"total":16.0,"aforo":0,"ids":[5],"obs":"Protegida, ancho libre ≥ 1.20 m","vent":null},{"name":"Aula de idiomas (30 al.)","cat":"aula","cant":1,"unit":50.0,"total":50.0,"aforo":30,"ids":[9],"obs":"1.5 m²/alumno","vent":"nat"},{"name":"Sala de práctica de conversación","cat":"aula","cant":1,"unit":30.0,"total":30.0,"aforo":15,"ids":[10],"obs":"","vent":null},{"name":"Depósito","cat":"dep","cant":1,"unit":10.0,"total":10.0,"aforo":0,"ids":[11],"obs":"","vent":null},{"name":"Circulación horizontal y hall (corredores, galería, vestíbulos)","cat":"circ","cant":null,"unit":null,"total":56.6,"aforo":0,"ids":[1,6,7,8],"obs":"","vent":null,"kind":"circ"},{"name":"Muros, columnas y tolerancia","cat":"tol","cant":null,"unit":null,"total":0.9,"aforo":0,"ids":[12],"obs":"","vent":null,"kind":"tol"}],"summary":{"util":130.0,"circ":56.6,"tol":0.9,"libre":0.0,"aforo":45,"plazas":0},"cats":{"circ":56.6,"sv":18.0,"cv":22.0,"aula":80.0,"dep":10.0,"tol":0.9},"entrance":null,"notes":["Aula de idiomas con su sala de práctica y depósito."],"bruta":187.5}]}],"check":[["3 aulas teóricas","3 aulas de 60 m² para 40 alumnos",[[0,"P6"]],true],["3 aulas de laboratorio de 40","3 laboratorios de 200 m² (5 m² por alumno), con ventilación natural y extracción",[[0,"P2"],[0,"P3"],[0,"P4"]],true],["3 aulas de idiomas","Una por piso, con sala de práctica y depósito",[[1,"P2"],[1,"P3"],[1,"P4"]],true],["1 aula taller de 40","Con 5 mesas de 1.2 × 1.5 × 1.8 m, ecran, oficina al lado y depósito",[[0,"P5"]],true],["1 aula BIM y aula de cómputo","Aula de cómputo en el piso 2 y aula BIM en el piso 3, cerca de los laboratorios",[[0,"P2"],[0,"P3"]],true],["Vestidor y 1 ducha por cada 60","Un vestidor con 2 duchas junto a cada laboratorio",[[0,"P2"],[0,"P3"],[0,"P4"]],true],["Pisos de servidumbre","Sótanos y azotea del Edificio 1, y sótano del Edificio 2",[[0,"S2"],[0,"S1"],[0,"AZ"],[1,"S1"]],true],["1.er piso: cafetería, sala de estudio y hall","Cafetería en el Edificio 2; sala de estudio y hall en el Edificio 1",[[1,"P1"],[0,"P1"]],true],["2 sótanos con estacionamiento","2 sótanos en el Edificio 1 con 18 plazas. Se pueden ampliar bajo el área libre",[[0,"S2"],[0,"S1"]],true],["Impresoras 2D y 3D en los depósitos","En el depósito del piso 4 y en el depósito del taller",[[0,"P4"],[0,"P5"]],true],["Aula magna en el último nivel, 60 personas","Piso 7 del Edificio 1, con foyer, escenario y terraza",[[0,"P7"]],true],["Ventilación en aulas magnas y laboratorios","Ventanas en fachada más extracción mecánica por el ducto del núcleo",[[0,"P2"],[0,"P3"],[0,"P4"],[0,"P7"]],true],["Verificar con coordenadas UTM","Pendiente: faltan las coordenadas reales del lote (ver notas)",[],false]]};
+const B = DATA.buildings, CATS = DATA.cats;
+const CATLABEL = Object.fromEntries(CATS);
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const f1 = n => Number(n).toFixed(1);
+const f2 = n => Number(n).toFixed(2);
+const S = n => (Math.round(n * 1000) / 1000).toString();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const cota = c => (c > 0 ? '+' : c < 0 ? '−' : '±') + Math.abs(c).toFixed(2);
+const st = {b: 0, l: 'P2', focus: null, hover: null, pin: null};
+
+/* ============================================================ geometría */
+const rect = (x, y, w, h, c = 'fs', x2 = '') => `<rect x="${S(x)}" y="${S(y)}" width="${S(w)}" height="${S(h)}" class="${c}" ${x2}/>`;
+const line = (x1, y1, x2, y2, c = 'fs') => `<line x1="${S(x1)}" y1="${S(y1)}" x2="${S(x2)}" y2="${S(y2)}" class="${c}"/>`;
+const circle = (cx, cy, r, c = 'fs') => `<circle cx="${S(cx)}" cy="${S(cy)}" r="${S(r)}" class="${c}"/>`;
+const grp = (r, inner) => `<g transform="translate(${S(r.x)} ${S(r.y)})" class="fur">${inner}</g>`;
+
+/* ---------- mobiliario por tipo de ambiente (coordenadas locales en metros) ---------- */
+const FURN = {
+  stair(r) {
+    const m = .12, land = 1.3, w = r.w, h = r.h, runL = w - land - 2 * m, n = Math.max(6, Math.round(runL / .28)), mid = h / 2;
+    let s = rect(m, m, w - 2 * m, h - 2 * m) + rect(w - m - land, m, land, h - 2 * m);
+    s += line(m, mid, w - m - land, mid);
+    for (let i = 1; i < n; i++) {
+      const x = m + i * runL / n;
+      s += line(x, m, x, mid - .05) + line(x, mid + .05, x, h - m);
+    }
+    const ay = (mid + h - m) / 2;
+    s += `<path d="M${S(m + .3)} ${S(ay)} H${S(w - land - .3)} m-.35 -.22 l.35 .22 l-.35 .22" class="fst"/>` + circle(m + .3, ay, .09, 'fsf');
+    return s;
+  },
+  lift(r) {
+    const m = .12;
+    return rect(m, m, r.w - 2 * m, r.h - 2 * m) + rect(.38, .38, r.w - .76, r.h - .76) +
+      line(.38, .38, r.w - .38, r.h - .38) + line(r.w - .38, .38, .38, r.h - .38);
+  },
+  duct(r) {
+    return rect(.12, .12, r.w - .24, r.h - .24) + line(.12, .12, r.w - .12, r.h - .12) + line(r.w - .12, .12, .12, r.h - .12);
+  },
+  wc(r) {
+    const w = r.w, h = r.h, a = w * .4, b = w * .8;
+    let s = line(a, 0, a, h) + line(b, 0, b, h);
+    [[0, a], [a, b]].forEach(([x0, x1]) => {
+      const n = Math.max(2, Math.floor((x1 - x0) / .95));
+      for (let i = 0; i < n; i++) s += rect(x0 + .2 + i * (x1 - x0 - .4) / n, h - 1.2, (x1 - x0 - .4) / n - .08, 1.1);
+    });
+    s += rect(b + .2, h - 1.7, w - b - .4, 1.5);
+    return s;
+  },
+  seats(r, n) {
+    const w = r.w, h = r.h, frontZ = 1.9, backZ = .7, sideZ = .8, aw = w - frontZ - backZ, ah = h - 2 * sideZ;
+    let py = .85, px = 1.05, rows = Math.max(1, Math.floor(ah / py)), cols = Math.ceil(n / rows);
+    if (cols * px > aw) px = aw / cols;
+    let s = line(.1, h / 2 - 1.5, .1, h / 2 + 1.5, 'fst') + rect(.45, h / 2 - .55, .6, 1.1);
+    let k = 0;
+    const x0 = frontZ + (aw - cols * px) / 2, y0 = sideZ + (ah - rows * py) / 2;
+    for (let c = 0; c < cols; c++) for (let q = 0; q < rows; q++) {
+      if (k++ >= n) break;
+      s += rect(x0 + c * px + .05, y0 + q * py + .06, Math.min(.55, px - .12), .5);
+    }
+    return s;
+  },
+  lab(r) {
+    const w = r.w, h = r.h, cols = 2, rows = 4, mx = 1.2, gap = 1.6, my = 1.7, bh = .95;
+    const bw = (w - 2 * mx - gap) / cols, ph = (h - 2 * my - bh) / (rows - 1);
+    let s = '';
+    for (let i = 0; i < 6; i++) s += rect(mx + i * ((w - 2 * mx) / 6), .14, (w - 2 * mx) / 6 - .25, .62);
+    for (let c = 0; c < cols; c++) for (let q = 0; q < rows; q++) {
+      const x = mx + c * (bw + gap), y = my + q * ph;
+      s += rect(x, y, bw, bh, 'fsf');
+      for (let i = 0; i < 5; i++) s += circle(x + bw * (i + .5) / 5, y + bh + .3, .17);
+    }
+    return s;
+  },
+  pcs(r, n) {
+    const w = r.w, h = r.h, cols = Math.max(2, Math.floor((w - 1) / 1.3)), rows = Math.ceil(n / cols), py = Math.min(1.25, (h - 2) / rows);
+    const pw = (w - 1) / cols;
+    let s = rect(.4, .25, Math.min(2.2, w - .8), .55, 'fsf'), k = 0;
+    for (let q = 0; q < rows; q++) for (let c = 0; c < cols; c++) {
+      if (k++ >= n) break;
+      const x = .5 + c * pw + (pw - 1.05) / 2, y = 1.55 + q * py;
+      s += rect(x, y, 1.05, .5, 'fsf') + circle(x + .52, y + .73, .15);
+    }
+    return s;
+  },
+  workshop(r) {
+    const w = r.w, h = r.h;
+    let s = line(.12, h / 2 - 2, .12, h / 2 + 2, 'fst');
+    s += `<text x="${S(.42)}" y="${S(h / 2)}" class="t f" text-anchor="middle" font-size="${S(.5)}" transform="rotate(-90 .42 ${S(h / 2)})">ECRAN</text>`;
+    const pos = [[.25, .3], [.5, .3], [.75, .3], [.375, .66], [.625, .66]];
+    const x0 = 2.2, xw = w - 4.4;
+    pos.forEach(([px, py]) => { s += rect(x0 + xw * px - .9, h * py - .75, 1.8, 1.5, 'fsf'); });
+    for (let i = 0; i < 8; i++) s += rect(2.2 + i * ((w - 4.4) / 8), h - .78, (w - 4.4) / 8 - .25, .6);
+    return s;
+  },
+  study(r) {
+    const w = r.w, h = r.h, cols = Math.max(1, Math.floor((w - 1.6) / 3.2)), rows = Math.max(1, Math.floor((h - 1.6) / 2.1));
+    let s = '';
+    const cw = (w - 1.2) / cols, ch = (h - 1.2) / rows;
+    for (let q = 0; q < rows; q++) for (let c = 0; c < cols; c++) {
+      const x = .6 + c * cw + (cw - 2.4) / 2, y = .6 + q * ch + (ch - 1) / 2;
+      s += rect(x, y, 2.4, 1, 'fsf');
+      for (let i = 0; i < 3; i++) s += rect(x + .2 + i * .75, y - .38, .5, .3) + rect(x + .2 + i * .75, y + 1.08, .5, .3);
+    }
+    return s;
+  },
+  cafe(r) {
+    const w = r.w, h = r.h, p = 1.9, cols = Math.floor((w - 1.4) / p), rows = Math.max(1, Math.floor((h - 1.2) / p));
+    let s = rect(w - .9, .4, .6, h - .8, 'fsf');
+    for (let q = 0; q < rows; q++) for (let c = 0; c < cols; c++) {
+      const cx = .7 + p / 2 + c * p + (w - 1.4 - cols * p) / 2, cy = .6 + p / 2 + q * p + (h - 1.2 - rows * p) / 2;
+      s += circle(cx, cy, .42, 'fsf') + circle(cx - .7, cy, .16) + circle(cx + .7, cy, .16);
+    }
+    return s;
+  },
+  kitchen(r) {
+    const w = r.w, h = r.h;
+    let s = rect(.3, .3, w - .6, .7, 'fsf') + rect(.3, h - 1, w - .6, .7, 'fsf') + rect(w * .25, h / 2 - .4, w * .5, .8, 'fsf');
+    for (let i = 0; i < 4; i++) s += circle(.9 + i * (w - 1.8) / 3, .65, .17);
+    return s;
+  },
+  auditorium(r) {
+    const w = r.w, h = r.h, ai = 1.3, cols = 5, rows = 6, sw = Math.min(.62, (w - 2.4 - ai) / (cols * 2) - .04), ph = Math.min(.95, (h - 2.4) / rows);
+    let s = '';
+    const x0 = (w - ai - 2 * cols * (sw + .05)) / 2;
+    for (let q = 0; q < rows; q++) for (let c = 0; c < 2 * cols; c++) {
+      const x = x0 + c * (sw + .05) + (c >= cols ? ai : 0), y = .9 + q * ph;
+      s += rect(x, y, sw, .5, 'fsf');
+    }
+    return s;
+  },
+  stage(r) {
+    return rect(.5, .4, r.w - 1, r.h - .8, 'fsf') + line(r.w / 2 - 1.5, r.h - 1, r.w / 2 + 1.5, r.h - 1, 'fst');
+  },
+  lockers(r) {
+    const w = r.w, h = r.h;
+    let s = line(w / 2, 0, w / 2, h);
+    [0, 1].forEach(k => {
+      const x0 = k * w / 2 + .25, ww = w / 2 - .5, n = Math.max(3, Math.floor(ww / .5));
+      for (let i = 0; i < n; i++) s += rect(x0 + i * ww / n, .12, ww / n - .06, .42);
+      s += rect(x0 + ww * .2, h / 2 - .2, ww * .6, .4, 'fsf');
+      s += rect(x0 + ww * .2, h - 1.25, ww * .6, 1.15) + circle(x0 + ww * .5, h - .68, .22);
+    });
+    return s;
+  },
+  printers(r) {
+    const w = r.w, h = r.h, n = Math.max(3, Math.floor((w - .8) / 1.1));
+    let s = '';
+    for (let i = 0; i < n; i++) s += rect(.4 + i * (w - .8) / n, .35, (w - .8) / n - .18, .7, 'fsf');
+    for (let i = 0; i < 2; i++) s += line(.4, h - .4 - i * .5, w - .4, h - .4 - i * .5);
+    return s + rect(w * .25, h / 2, w * .5, .8, 'fsf');
+  },
+  store(r) {
+    const w = r.w, h = r.h, hor = w >= h, n = Math.max(2, Math.floor((hor ? h : w) / 1.4));
+    let s = '';
+    for (let i = 0; i < n; i++) s += hor ? rect(.4, .35 + i * (h - .7) / n, w - .8, .4, 'fsf') : rect(.35 + i * (w - .7) / n, .4, .4, h - .8, 'fsf');
+    return s;
+  },
+  genset(r) {
+    return rect(.5, .5, r.w - 1, r.h - 1, 'fsf') + circle(r.w / 2, r.h / 2, Math.min(r.w, r.h) * .22);
+  },
+  tankroom(r) {
+    const w = r.w, h = r.h;
+    let s = rect(.35, .4, w - .7, h * .58, 'fsf') + rect(.35, h * .58 + .6, w - .7, h * .42 - 1, 'fsf');
+    for (let i = 0; i < 3; i++) s += line(.9, .9 + i * .45, w - .9, .9 + i * .45, 'fsd');
+    return s;
+  },
+  tank(r) {
+    const R = Math.min(r.w, r.h) * .36;
+    return circle(r.w / 2, r.h / 2, R, 'fsf') + circle(r.w / 2, r.h / 2, R * .72) + circle(r.w / 2, r.h / 2, R * .12, 'fsf');
+  },
+  fans(r) {
+    const R = Math.min(r.w / 4, r.h / 2) * .8;
+    let s = '';
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+      const cx = r.w * (.27 + i * .46), cy = r.h * (.3 + j * .4);
+      s += circle(cx, cy, R, 'fsf') + line(cx - R, cy, cx + R, cy) + line(cx, cy - R, cx, cy + R);
+    }
+    return s;
+  },
+  terrace(r) {
+    let s = '';
+    const n = Math.floor(Math.min(r.w, r.h) / 3.2);
+    for (let i = 0; i < Math.min(n, 4); i++) s += circle(1 + i * 2.6 % (r.w - 2), 1 + (i * 3.1) % (r.h - 2), .55, 'fsf');
+    return s;
+  },
+  lounge(r) {
+    const w = r.w, h = r.h;
+    return rect(.4, .4, w * .42, .8, 'fsf') + rect(w * .55, .4, w * .42 - .4, .8, 'fsf') + rect(w * .28, h / 2 - .35, w * .44, .7, 'fsf');
+  },
+};
+
+function ramp(r, lv) {
+  const w = r.w, h = r.h, down = lv.id === 'S1';
+  let s = '';
+  for (let y = .5; y < h - .2; y += .55) s += line(.2, y, w - .2, y, 'fsd');
+  const x = Math.min(.9, w * .18), y1 = down ? 1.2 : h - 1.2, y2 = down ? h - 1.2 : 1.2, d = down ? -.5 : .5;
+  s += `<path d="M${S(x)} ${S(y1)} V${S(y2)} m-.4 ${S(d)} l.4 ${S(-d)} l.4 ${S(d)}" class="fst"/>`;
+  return s;
+}
+
+/* ============================================================ texto */
+const CH = .6;
+function wrap(txt, maxW, fs) {
+  const words = txt.split(' '), lines = [];
+  let cur = '';
+  for (const w of words) {
+    if (w.length * fs * CH > maxW) return null;
+    const t = cur ? cur + ' ' + w : w;
+    if (t.length * fs * CH <= maxW) cur = t; else { lines.push(cur); cur = w; }
+  }
+  lines.push(cur);
+  return lines;
+}
+function fitText(w, h, name, area, u, rot) {
+  for (let fs = 1.02 * u; fs >= .66 * u - 1e-6; fs -= .06 * u) {
+    const lines = wrap(name, w - .3, fs);
+    if (!lines) continue;
+    const need = lines.length * fs * 1.12 + (area ? fs * .98 : 0);
+    if (lines.length <= 3 && need <= h - .3) return {fs, lines, rot};
+  }
+  return null;
+}
+function textBlock(cx, cy, fit, area, cls, rot) {
+  const {fs, lines} = fit, lh = fs * 1.12, total = lines.length * lh + (area ? fs * .98 : 0);
+  let y = cy - total / 2 + fs * .82, s = '';
+  const cw = Math.max(...lines.map(l => l.length * fs * CH * .92), area ? area.length * fs * .86 * .62 : 0) + .3;
+  s += `<rect x="${S(cx - cw / 2)}" y="${S(cy - total / 2 - .08)}" width="${S(cw)}" height="${S(total + .16)}" rx=".12" class="cb"/>`;
+  lines.forEach(l => { s += `<text x="${S(cx)}" y="${S(y)}" class="t ${cls}" font-size="${S(fs)}">${esc(l)}</text>`; y += lh; });
+  if (area) s += `<text x="${S(cx)}" y="${S(y - lh + fs * 1.02)}" class="t a" font-size="${S(fs * .86)}">${esc(area)}</text>`;
+  return rot ? `<g transform="rotate(-90 ${S(cx)} ${S(cy)})">${s}</g>` : s;
+}
+function labelFor(r, u, widest) {
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  if (r.cat === 'tol') return '';
+  if (r.furn === 'wc') {
+    const fs = .9 * u, y = r.y + r.h - 1.35 - .12;
+    return [['H', .2], ['M', .6], ['Acc.', .9]].map(([t, k]) => `<text x="${S(r.x + r.w * k)}" y="${S(r.y + r.h * .3)}" class="t n" font-size="${S(fs)}">${t}</text>`).join('') +
+      `<text x="${S(cx)}" y="${S(r.y + r.h * .62)}" class="t a" font-size="${S(.8 * u)}">${f1(r.area)} m²</text>`;
+  }
+  if (['stair', 'lift', 'duct'].includes(r.furn)) {
+    const n = r.short || r.name;
+    for (const [w, h, rot] of [[r.w, r.h, false], [r.h, r.w, true]]) {
+      const fit = fitText(w, h, n, null, u);
+      if (fit) return textBlock(cx, cy, fit, null, 'n', rot);
+    }
+    return '';
+  }
+  const noProgCirc = (r.cat === 'circ' || r.cat === 'libre') && !r.prog;
+  if (noProgCirc && !(r.furn === 'hall' || r.name === 'Zona de estar' || widest[r.name] === r.id)) return '';
+  const cls = noProgCirc ? 's' : 'n';
+  const area = noProgCirc ? null : f1(r.area) + ' m²';
+  const tries = [[r.name, area], [r.name, null], [r.short, area], [r.short, null]].filter(t => t[0]);
+  for (const [n, a] of tries) {
+    const fit = fitText(r.w, r.h, n, a, u);
+    if (fit) return textBlock(cx, cy, fit, a, cls, false);
+  }
+  for (const [n, a] of tries) {
+    const fit = fitText(r.h, r.w, n, a, u);
+    if (fit) return textBlock(cx, cy, fit, a, cls, true);
+  }
+  return '';
+}
+
+/* ============================================================ planta */
+function planSVG(b, lv) {
+  const W = b.W, D = b.D, ml = 3.6, mr = 2.9, mt = 2.9, mb = 3.7;
+  const vb = [-ml, -mt, W + ml + mr, D + mt + mb], u = vb[2] / 62, t = .32;
+  const rowOf = {};
+  lv.rows.forEach((row, i) => row.ids.forEach(id => rowOf[id] = i));
+  const widest = {};
+  lv.rooms.filter(r => (r.cat === 'circ' || r.cat === 'libre') && !r.prog).forEach(r => {
+    const c = lv.rooms.find(q => q.id === widest[r.name]);
+    if (!c || r.w * r.h > c.w * c.h) widest[r.name] = r.id;
+  });
+  const nonCore = new Set(['stair', 'lift', 'duct', 'wc']);
+  let s = `<svg viewBox="${vb.map(S).join(' ')}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Planta de ${esc(b.name)}, ${esc(lv.name)}, huella de ${W.toFixed(2)} por ${D.toFixed(2)} metros, con ${lv.rooms.filter(r => r.prog).length} ambientes">`;
+  s += `<defs>
+    <pattern id="pHatch" width=".5" height=".5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2=".5" style="stroke:var(--wall);stroke-width:.12"/></pattern>
+    <pattern id="pGrass" width=".7" height=".7" patternUnits="userSpaceOnUse"><circle cx=".18" cy=".2" r=".05" style="fill:var(--ok);opacity:.55"/><circle cx=".5" cy=".52" r=".05" style="fill:var(--ok);opacity:.55"/></pattern>
+    <pattern id="pDots" width=".6" height=".6" patternUnits="userSpaceOnUse"><circle cx=".3" cy=".3" r=".035" style="fill:var(--muted);opacity:.55"/></pattern>
+  </defs>`;
+  s += `<rect x="${S(vb[0])}" y="${S(vb[1])}" width="${S(vb[2])}" height="${S(vb[3])}" class="sheetbg"/>`;
+  s += `<path class="wall" fill-rule="evenodd" d="M${-t} ${-t}H${S(W + t)}V${S(D + t)}H${-t}Z M0 0V${S(D)}H${S(W)}V0Z"/>`;
+  // ambientes
+  let rooms = '', furn = '', labels = '';
+  for (const r of lv.rooms) {
+    const thin = r.cat === 'tol' && Math.min(r.w, r.h) < .7;
+    const cls = `k-${r.cat}`;
+    let fillCls = 'fill' + (['stair', 'lift'].includes(r.furn) ? ' core' : '') + (r.furn === 'roof' ? ' nb' : '');
+    const dataRow = rowOf[r.id];
+    rooms += `<g class="rm ${cls}" data-i="${r.id}" data-row="${dataRow === undefined ? '' : dataRow}" data-cat="${r.cat}">`;
+    rooms += `<rect x="${S(r.x)}" y="${S(r.y)}" width="${S(r.w)}" height="${S(r.h)}" class="${fillCls}"${thin ? ' style="fill:var(--wall)"' : ''}/>`;
+    if (r.cat === 'tol' && !thin) rooms += `<rect x="${S(r.x)}" y="${S(r.y)}" width="${S(r.w)}" height="${S(r.h)}" class="hatch" pointer-events="none"/>`;
+    if (r.cat === 'circ' && !r.prog) rooms += `<rect x="${S(r.x)}" y="${S(r.y)}" width="${S(r.w)}" height="${S(r.h)}" class="dots" pointer-events="none"/>`;
+    if (r.cat === 'libre' && r.furn === 'terrace') rooms += `<rect x="${S(r.x)}" y="${S(r.y)}" width="${S(r.w)}" height="${S(r.h)}" class="grass" pointer-events="none"/>`;
+    const fn = r.furn && (FURN[r.furn] || (r.furn === 'ramp' ? (q => ramp(q, lv)) : null));
+    if (fn) rooms += grp(r, fn(r, r.aforo || 0));
+    rooms += '</g>';
+    labels += `<g class="lbl ${cls}" data-for="${r.id}">${labelFor(r, u, widest)}</g>`;
+  }
+  s += rooms;
+  // estacionamiento
+  if (lv.stalls) {
+    let k = 1;
+    s += '<g class="stalls">';
+    for (const q of lv.stalls) {
+      s += `<rect x="${S(q.x)}" y="${S(q.y)}" width="${q.w}" height="${q.h}" class="fsf"/>` +
+        `<text x="${S(q.x + q.w / 2)}" y="${S(q.y < D / 2 ? q.y + 1.1 : q.y + q.h - .6)}" class="t a" font-size="${S(.9 * u)}" style="stroke:none">${k++}</text>`;
+    }
+    const C = lv.rooms.find(r => r.sector === 'C');
+    if (C) {
+      const ay = C.y + (C.h - 5) / 2;
+      s += `<path d="M${S(C.x + 1)} ${S(ay)} H${S(C.x + C.w - 1)} m-.5 -.3 l.5 .3 l-.5 .3 M${S(C.x + C.w - 1)} ${S(ay)} " class="fsd"/>` +
+        `<text x="${S(C.x + C.w / 2)}" y="${S(ay - .35)}" class="t s" font-size="${S(.82 * u)}" style="stroke:none">pasillo de maniobra</text>`;
+    }
+    s += '</g>';
+  }
+  s += labels;
+  // ventanas
+  let win = '';
+  for (const r of lv.rooms) {
+    if (!r.win) continue;
+    const e = .16, p = .35;
+    if (r.y < .02 && r.w > .8) win += line(r.x + p, -e, r.x + r.w - p, -e, 'win');
+    if (r.y + r.h > D - .02 && r.w > .8) win += line(r.x + p, D + e, r.x + r.w - p, D + e, 'win');
+    if (r.x < .02 && r.h > .8) win += line(-e, r.y + p, -e, r.y + r.h - p, 'win');
+    if (r.x + r.w > W - .02 && r.h > .8) win += line(W + e, r.y + p, W + e, r.y + r.h - p, 'win');
+  }
+  s += `<g>${win}</g>`;
+  // acceso
+  if (lv.entrance) {
+    const en = lv.entrance, fs = .9 * u, m = (en.a + en.b) / 2;
+    if (en.side === 'S') {
+      s += `<path d="M${S(m)} ${S(D + 2.4)} V${S(D + .75)}" class="entl"/><path d="M${S(m - .45)} ${S(D + 1.3)} L${S(m)} ${S(D + .55)} L${S(m + .45)} ${S(D + 1.3)}Z" class="ent"/>` +
+        `<text x="${S(m)}" y="${S(D + 3.2)}" class="entt" text-anchor="middle" font-size="${S(fs)}">${esc(en.label)}</text>`;
+    } else {
+      s += `<path d="M${-2.6} ${S(m)} H${-.75}" class="entl"/><path d="M${-1.3} ${S(m - .45)} L${-.55} ${S(m)} L${-1.3} ${S(m + .45)}Z" class="ent"/>` +
+        `<text x="${-.3}" y="${S(m - .8)}" class="entt" text-anchor="end" font-size="${S(fs)}">${esc(en.label)}</text>`;
+    }
+  }
+  // cotas y escala
+  const dy = -1.7, dx = W + 1.9, tk = .3;
+  s += line(0, dy, W, dy, 'dim') + line(0, dy - tk, 0, dy + tk, 'dim') + line(W, dy - tk, W, dy + tk, 'dim') +
+    `<text x="${S(W / 2)}" y="${S(dy - .35)}" class="dimt" font-size="${S(.9 * u)}">${W.toFixed(2)} m</text>`;
+  s += line(dx, 0, dx, D, 'dim') + line(dx - tk, 0, dx + tk, 0, 'dim') + line(dx - tk, D, dx + tk, D, 'dim') +
+    `<text x="${S(dx + .4)}" y="${S(D / 2)}" class="dimt" font-size="${S(.9 * u)}" transform="rotate(90 ${S(dx + .4)} ${S(D / 2)})">${D.toFixed(2)} m</text>`;
+  const sy = D + 2.7;
+  s += line(0, sy, 5, sy, 'dim');
+  for (let i = 0; i <= 5; i++) s += line(i, sy - .2, i, sy + .2, 'dim');
+  s += `<text x="0" y="${S(sy + 1.05)}" class="dimt" font-size="${S(.8 * u)}" style="text-anchor:start">0</text><text x="5" y="${S(sy + 1.05)}" class="dimt" font-size="${S(.8 * u)}" style="text-anchor:end">5 m</text>`;
+  s += '<g id="hlLayer"></g></svg>';
+  return s;
+}
+
+/* ============================================================ vistas */
+function curB() { return B[st.b]; }
+function curL() { return curB().levels.find(l => l.id === st.l) || curB().levels[0]; }
+
+function renderHead() {
+  [0, 1].forEach(i => {
+    const b = B[i], n = b.levels.filter(l => l.id !== 'AZ').length;
+    $('#tb' + (i + 1)).innerHTML = `<h2>${esc(b.name)}</h2><div class="big">${b.W.toFixed(2)} × ${b.D.toFixed(2)}<small>m</small></div>
+      <p>Huella de <span class="mono">${f1(b.area)}</span> m² · ${n} niveles${b.levels.some(l => l.id === 'AZ') ? ' y azotea técnica' : ''}</p>`;
+  });
+  $('#seg').innerHTML = B.map((b, i) => `<button role="tab" data-b="${i}" aria-selected="${i === st.b}"><b>${esc(b.name)}</b><span class="mono">${f1(b.area)} m²</span></button>`).join('');
+}
+
+function renderRail() {
+  const b = curB(), lvs = [...b.levels].reverse();
+  const liftTop = b.levels.filter(l => l.rooms.some(r => r.furn === 'lift')).map(l => l.id);
+  $('#lvls').innerHTML = lvs.map(l => {
+    const tot = Object.values(l.cats).reduce((a, c) => a + c, 0);
+    const bar = Object.entries(l.cats).map(([k, v]) => `<i class="sw-${k}" style="flex:${v}" title="${esc(CATLABEL[k])}: ${f1(v)} m²"></i>`).join('');
+    const noLift = !liftTop.includes(l.id);
+    return `<li><button class="lv" data-l="${l.id}" aria-current="${l.id === st.l}"><span class="shaft${noLift ? ' no-lift' : ''}"><i></i></span>
+      <span><span class="lv-h"><b>${esc(l.name)}</b><em>${cota(l.cota)}</em></span><span class="bar" aria-hidden="true">${bar}</span><span class="lv-use">${esc(l.use)}</span></span></button></li>`;
+  }).join('');
+}
+
+function renderSheet() {
+  const b = curB(), l = curL(), s = l.summary;
+  $('#lvTitle').innerHTML = `${esc(b.name)} · ${esc(l.name)}<span class="cota">${cota(l.cota)} m</span>`;
+  $('#lvUse').textContent = l.use;
+  const k = [['Huella', f1(b.area), 'm²'], ['Útil', f1(s.util), 'm²'], ['Circulación', f1(s.circ), 'm²'], l.stalls ? ['Plazas', s.plazas, ''] : ['Aforo', s.aforo, 'pers.']];
+  if (s.libre) k.splice(3, 0, ['Libre', f1(s.libre), 'm²']);
+  $('#kpis').innerHTML = k.map(([a, v, un]) => `<div><dt>${a}</dt><dd>${v} <small>${un}</small></dd></div>`).join('');
+  $('#planBox').innerHTML = planSVG(b, l);
+  $('#cap').innerHTML = `Planta de ${esc(b.name)}, ${esc(l.name.toLowerCase())}. Cada rectángulo es un ambiente con su área en m². Las líneas azules <span class="wl"></span> en fachada son ventanas. Pasa el cursor sobre un ambiente para ver sus medidas. Norte por definir con las coordenadas UTM. <span class="only-m">Desliza la planta hacia los lados para verla completa.</span>`;
+  const present = CATS.filter(([c]) => l.cats[c]);
+  $('#legend').innerHTML = present.map(([c, lab]) => `<button class="chip" data-c="${c}" aria-pressed="${st.focus === c}"><span class="sw sw-${c}"></span>${esc(lab)} <span class="m">${f1(l.cats[c])}</span></button>`).join('');
+  $('#notes').innerHTML = l.notes.map(n => `<li>${esc(n)}</li>`).join('');
+  $('#plan').classList.toggle('focus', !!st.focus);
+  applyFocus();
+}
+
+function sortRows(rows) {
+  const rank = {aula: 0, lab: 0, comp: 0, taller: 0, magna: 0, estudio: 0, cafe: 0, adm: 1, apoyo: 1, dep: 2, park: 2, serv: 2, libre: 3, cv: 4, sv: 4, circ: 5, tol: 6};
+  return rows.map((r, i) => ({r, i})).sort((a, b) => (rank[a.r.cat] ?? 9) - (rank[b.r.cat] ?? 9) || a.i - b.i);
+}
+function renderAreas() {
+  const l = curL();
+  const body = sortRows(l.rows).map(({r, i}) => {
+    const cnt = r.cant && r.cant > 1 ? `<span class="cnt">×${r.cant}</span>` : '';
+    const unit = r.cant > 1 ? `<span class="u">${f1(r.unit)} c/u</span>` : '';
+    const tag = r.vent ? `<br><span class="tag">${r.vent === 'nat+mec' ? 'Ventilación natural + extracción' : 'Ventilación natural'}</span>` : '';
+    return `<tr data-row="${i}"><td><div class="nm"><span class="sw sw-${r.cat}"></span><div>${esc(r.name)}${cnt}${tag}</div></div></td><td class="n">${f1(r.total)}${unit}</td><td class="n">${r.aforo || ''}</td></tr>`;
+  }).join('');
+  const all = l.rows.reduce((a, r) => a + r.total, 0);
+  $('#areas').innerHTML = `<thead><tr><th>Ambiente</th><th class="n">m²</th><th class="n">Aforo</th></tr></thead><tbody>${body}</tbody>
+    <tfoot><tr class="tot"><td>Huella del nivel</td><td class="n">${f1(all)}</td><td class="n">${l.summary.aforo || ''}</td></tr></tfoot>`;
+}
+
+function renderSummary() {
+  const b = curB();
+  const rows = [...b.levels].reverse().map(l => {
+    const s = l.summary;
+    return `<tr class="go${l.id === st.l ? ' cur' : ''}" data-l="${l.id}"><td><b>${esc(l.name)}</b></td><td class="n">${cota(l.cota)}</td><td class="use">${esc(l.use)}</td>
+      <td class="n">${f1(s.util)}</td><td class="n">${f1(s.circ)}</td><td class="n">${s.libre ? f1(s.libre) : '—'}</td><td class="n">${f1(s.tol)}</td><td class="n">${f1(b.area)}</td><td class="n">${s.aforo || '—'}</td></tr>`;
+  }).join('');
+  const lv = b.levels.filter(l => l.id !== 'AZ');
+  const sum = k => lv.reduce((a, l) => a + l.summary[k], 0);
+  $('#sum').innerHTML = `<thead><tr><th>Nivel</th><th class="n">Cota</th><th>Uso principal</th><th class="n">Útil m²</th><th class="n">Circ. m²</th><th class="n">Libre m²</th><th class="n">Muros m²</th><th class="n">Huella m²</th><th class="n">Aforo</th></tr></thead>
+    <tbody>${rows}</tbody><tfoot><tr class="tot"><td colspan="3">${esc(b.name)}, niveles 1 a ${lv.length}${b.levels.length > lv.length ? ' (sin azotea)' : ''}</td>
+    <td class="n">${f1(sum('util'))}</td><td class="n">${f1(sum('circ'))}</td><td class="n">${f1(sum('libre'))}</td><td class="n">${f1(sum('tol'))}</td><td class="n">${f1(b.area * lv.length)}</td><td class="n">${sum('aforo')}</td></tr></tfoot>`;
+}
+
+const find = (bi, id) => B[bi].levels.find(l => l.id === id);
+function renderCheck() {
+  $('#chk').innerHTML = `<thead><tr><th>Requisito</th><th>Estado</th><th>Cómo se resuelve</th><th>Ver nivel</th></tr></thead><tbody>` + DATA.check.map(([t, d, where, ok]) =>
+    `<tr><td><b>${esc(t)}</b></td><td><span class="status${ok ? '' : ' pend'}">${ok ? 'Incluido' : 'Pendiente'}</span></td><td>${esc(d)}</td>
+     <td><div class="where">${where.map(([bi, id]) => `<button class="go-btn" data-b="${bi}" data-l="${id}">${bi ? 'E2' : 'E1'} · ${esc(find(bi, id).name)}</button>`).join('')}</div></td></tr>`).join('') + '</tbody>';
+}
+
+function renderFoot() {
+  $('#ft').innerHTML = [
+    'Las huellas salen de las capturas del modelo: Edificio 1 de 403.4 m² y Edificio 2 de 187.5 m². Las medidas de 26.16 × 15.42 m y 18.94 × 9.90 m respetan la proporción rectangular de esas plantas.',
+    'Áreas de ambientes con los índices del RNE A.040: aula de 1.5 m² por alumno, laboratorio y taller de 5 m² por alumno. Confirmar con la versión vigente de la norma.',
+    'El núcleo de escaleras, ascensor, SS.HH. y ductos se repite en la misma posición en todos los niveles. Las dos escaleras del Edificio 1 están en extremos opuestos de la franja posterior.',
+    'Las áreas se miden a ejes de muros: el espesor de los muros interiores queda dentro de cada ambiente, por eso el saldo de muros y tolerancia es pequeño.',
+    'La rampa vehicular se dibuja solo en su tramo interior. La pendiente y el tramo exterior dependen del área libre del lote.',
+    'Coordenadas UTM zona 18S (WGS84), referenciales del campus: E 276,977 / N 8,670,117. Faltan las coordenadas reales del lote y la orientación respecto al norte.',
+    'Las áreas de oficinas, salas y depósitos de apoyo son propuestas de diseño; las de aulas, laboratorios, taller, aula magna y cómputo siguen el programa pedido.',
+  ].map(t => `<li>${esc(t)}</li>`).join('');
+}
+
+/* ============================================================ interacción */
+const tip = $('#tip');
+function roomInfo(l, id) {
+  const r = l.rooms.find(q => q.id === id);
+  const row = l.rows.find(q => q.ids.includes(id));
+  let h = `<b>${esc(r.name)}</b>`;
+  if (r.cat === 'tol') return `<b>Muros y tolerancia</b><span>${f2(r.w)} × ${f2(r.h)} m</span>`;
+  h += `<span class="mono">${f1(r.area)} m² · ${f2(r.w)} × ${f2(r.h)} m</span>`;
+  if (r.aforo) h += `<span>Aforo: ${r.aforo} personas</span>`;
+  if (r.vent) h += `<span>Ventilación ${r.vent === 'nat+mec' ? 'natural + extracción mecánica' : 'natural'}</span>`;
+  else if (r.win) h += `<span>Con ventanas en fachada</span>`;
+  if (r.obs) h += `<span>${esc(r.obs)}</span>`;
+  return h;
+}
+function setHover(ids) {
+  st.hover = ids;
+  const layer = $('#hlLayer'); if (!layer) return;
+  const l = curL(), sel = new Set([...(ids || []), ...(st.pin || [])]);
+  layer.innerHTML = l.rooms.filter(r => sel.has(r.id)).map(r => `<rect x="${S(r.x)}" y="${S(r.y)}" width="${S(r.w)}" height="${S(r.h)}" class="hlr"/>`).join('');
+  $$('#areas tbody tr').forEach(tr => {
+    const row = l.rows[+tr.dataset.row];
+    tr.classList.toggle('hl', !!row && row.ids.some(i => sel.has(i)));
+  });
+}
+function applyFocus() {
+  const l = curL(), on = st.focus;
+  $$('#planBox .rm').forEach(g => g.classList.toggle('on', !!on && g.dataset.cat === on));
+  $$('#planBox .lbl').forEach(g => { const r = l.rooms.find(q => q.id === +g.dataset.for); g.style.opacity = !on || (r && r.cat === on) ? '' : '.2'; });
+  $$('#planBox .stalls').forEach(g => g.style.opacity = !on || on === 'park' ? '' : '.2');
+  $('#plan').classList.toggle('focus', !!on);
+  $$('#legend .chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.c === on));
+}
+function select(bi, id, noScroll) {
+  st.b = bi; st.l = id; st.focus = null; st.pin = null;
+  renderHead(); renderRail(); renderSheet(); renderAreas(); renderSummary();
+  if (!noScroll && window.matchMedia('(max-width:860px)').matches) $('#lvTitle').scrollIntoView({block: 'start'});
+}
+
+document.addEventListener('click', e => {
+  const seg = e.target.closest('#seg button');
+  if (seg) { const bi = +seg.dataset.b, b = B[bi]; select(bi, (b.levels.find(l => l.id === st.l) || b.levels.find(l => l.id === 'P2') || b.levels[0]).id, true); return; }
+  const lv = e.target.closest('.lv'); if (lv) { select(st.b, lv.dataset.l, false); return; }
+  const go = e.target.closest('.go-btn'); if (go) { select(+go.dataset.b, go.dataset.l, true); $('#lvTitle').scrollIntoView({behavior: 'smooth', block: 'start'}); return; }
+  const tr = e.target.closest('#sum tr.go'); if (tr) { select(st.b, tr.dataset.l, true); $('#lvTitle').scrollIntoView({behavior: 'smooth', block: 'start'}); return; }
+  const chip = e.target.closest('#legend .chip'); if (chip) { st.focus = st.focus === chip.dataset.c ? null : chip.dataset.c; applyFocus(); return; }
+  const g = e.target.closest('#planBox .rm');
+  if (g) { const id = +g.dataset.i; st.pin = st.pin && st.pin[0] === id ? null : [id]; setHover(null); return; }
+  const ar = e.target.closest('#areas tbody tr');
+  if (ar) { const row = curL().rows[+ar.dataset.row]; const same = st.pin && row.ids.every(i => st.pin.includes(i)); st.pin = same ? null : row.ids.slice(); setHover(null); return; }
+  if (!e.target.closest('#planBox')) { if (st.pin) { st.pin = null; setHover(null); } }
+});
+document.addEventListener('mouseover', e => {
+  const g = e.target.closest('#planBox .rm');
+  if (g) { const l = curL(), id = +g.dataset.i; setHover([id]); tip.innerHTML = roomInfo(l, id); tip.hidden = false; return; }
+  const tr = e.target.closest('#areas tbody tr');
+  if (tr) { const row = curL().rows[+tr.dataset.row]; if (row) setHover(row.ids); tip.hidden = true; return; }
+});
+document.addEventListener('mousemove', e => {
+  if (tip.hidden) return;
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + w > innerWidth - 8) x = e.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+});
+document.addEventListener('mouseout', e => {
+  const to = e.relatedTarget;
+  if (e.target.closest && (e.target.closest('#planBox .rm') || e.target.closest('#areas tbody tr')) && !(to && to.closest && (to.closest('#planBox .rm') || to.closest('#areas tbody tr')))) { tip.hidden = true; setHover(null); }
+});
+document.addEventListener('keydown', e => {
+  if (!['ArrowUp', 'ArrowDown'].includes(e.key) || !e.target.closest('.lv')) return;
+  const ls = curB().levels.map(l => l.id).reverse(), i = ls.indexOf(st.l), j = Math.max(0, Math.min(ls.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)));
+  if (j !== i) { e.preventDefault(); select(st.b, ls[j], true); const nb = $(`.lv[data-l="${ls[j]}"]`); if (nb) nb.focus(); }
+});
+
+/* ============================================================ inicio */
+(function init() {
+  const m = /^#(E[12])-([A-Z0-9]+)$/i.exec(location.hash || '');
+  if (m) { const bi = B.findIndex(b => b.id === m[1].toUpperCase()); if (bi >= 0 && find(bi, m[2].toUpperCase())) { st.b = bi; st.l = m[2].toUpperCase(); } }
+  renderHead(); renderRail(); renderSheet(); renderAreas(); renderSummary(); renderCheck(); renderFoot();
+})();
+})();
+</script>
+
+</body>
+</html>
