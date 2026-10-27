@@ -57,7 +57,7 @@ class DiagnosticoTests(unittest.TestCase):
         self.assertEqual(len([n for n in os.listdir(self.tmp.name) if n.startswith(DG.PREFIJO)]), DG.MAX_ARCHIVOS)
 
     def test_registra_el_corte_paso_a_paso(self):
-        doc, muros = T.modelo(rechazar_partidos=True, copia_sin_insertos=True)
+        doc, muros = T.modelo(rechazar_sobresale_arriba=True, copia_sin_insertos=True)
         infos = [T.RC.analizar_muro(doc, m) for m in muros[1:2]]
         d = DG.Diagnostico()
         rep = T.RC.cortar_muros(doc, infos, T.opciones(), d)
@@ -66,7 +66,8 @@ class DiagnosticoTests(unittest.TestCase):
         for esperado in ("intento", "plan", "originales", "copia", "hospedados_tras_copiar", "asignacion",
                          "tras_alturas", "antes_de_confirmar", "confirmar"):
             self.assertIn(esperado, pasos)
-        # el primer intento (corte a 1.50, puerta partida) lo rechazo Revit: el diagnostico dice que elemento fue
+        # el primer intento (puerta entera en el tramo de abajo) lo rechazo Revit: el diagnostico dice que elemento
+        # fue; el segundo (puerta en el tramo de arriba) se confirmo
         confirmaciones = [p for p in d.datos["pasos"] if p["paso"] == "confirmar"]
         self.assertEqual(len(confirmaciones), 2)
         falla = confirmaciones[0]["fallas"][0]

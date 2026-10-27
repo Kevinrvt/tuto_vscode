@@ -172,7 +172,16 @@ class CruceTests(unittest.TestCase):
         p = self.plan(LC.CRUCE_HUECO, [self.VENTANA])
         self.assertEqual(p["tramos"], [(0.0, 1.5), (1.5, 2.6)])
         self.assertEqual(len(p["cruces"]), 1)
-        self.assertTrue(any(u"se abre hueco" in a for a in p["avisos"]))
+        self.assertTrue(any(u"no se parte" in a for a in p["avisos"]))
+
+    def test_tramo_anfitrion_y_hueco_segun_la_regla(self):
+        rangos = [(0.0, 1.5), (1.5, 2.6)]
+        # puerta de 0.00 a 2.10: en el tramo de su base, el hueco va arriba; en el de su tope, abajo
+        self.assertEqual(LC.huecos_para_insertos(rangos, [(21, 0.0, 2.1)], 1e-3), [(1, 21, 1.5, 2.1)])
+        self.assertEqual(LC.huecos_para_insertos(rangos, [(21, 0.0, 2.1)], 1e-3, LC.ANFITRION_TOPE),
+                         [(0, 21, 0.0, 1.5)])
+        self.assertEqual(LC.tramo_de_cota(rangos, LC.cota_referencia(1.0, 2.2, LC.ANFITRION_TOPE, 1e-3), 1e-3), 1)
+        self.assertEqual(LC.tramo_de_cota(rangos, LC.cota_referencia(1.0, 2.2, LC.ANFITRION_BASE, 1e-3), 1e-3), 0)
 
     def test_ajustar_mueve_el_corte_al_borde_mas_cercano(self):
         p = self.plan(LC.CRUCE_AJUSTAR, [self.VENTANA])

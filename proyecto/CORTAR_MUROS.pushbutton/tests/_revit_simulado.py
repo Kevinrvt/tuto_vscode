@@ -9,6 +9,8 @@ journal de Revit 2026 al cortar muros con puertas y ventanas:
     ("Hay ejemplares de ... que no cortan nada") y la transaccion se deshace;
   * con copia_sin_insertos=True, CopyElement copia las puertas y ventanas pero devuelve solo el muro (lo que explica
     que la version 2.2 tampoco las encontrara);
+  * con rechazar_sobresale_arriba=True es error una puerta o ventana que pasa por encima del tope de su muro (el
+    tramo de abajo): asi se prueba el reintento que la deja entera en el tramo de arriba;
   * con rechazar_partidos=True tambien es error una puerta o ventana que su muro cubre solo en parte (por si Revit
     lo rechaza en algun caso: el corte debe reintentarse moviendo el corte).
 
@@ -205,9 +207,10 @@ ElementTransformUtils = _Copiador
 
 
 class Documento(object):
-    def __init__(self, rechazar_partidos=False, copia_sin_insertos=False):
+    def __init__(self, rechazar_partidos=False, copia_sin_insertos=False, rechazar_sobresale_arriba=False):
         global DOC
         DOC = self
+        self.rechazar_sobresale_arriba = rechazar_sobresale_arriba
         self.copia_sin_insertos = copia_sin_insertos
         self.els, self._id, self.registro, self.modificados = {}, 1000, [], set()
         self.rechazar_partidos = rechazar_partidos
@@ -253,7 +256,8 @@ class Documento(object):
             zi, zs = e.cotas()
             dentro = min(zs, hi) - max(zi, lo)
             entero = zi >= lo - 1e-6 and zs <= hi + 1e-6
-            if clave in vistos or dentro <= 1e-6 or (self.rechazar_partidos and not entero):
+            if clave in vistos or dentro <= 1e-6 or (self.rechazar_partidos and not entero) \
+                    or (self.rechazar_sobresale_arriba and zs > hi + 1e-6):
                 errores.append(u"Hay ejemplares de {} que no cortan nada.".format(e.Name))
             vistos[clave] = e
         return errores

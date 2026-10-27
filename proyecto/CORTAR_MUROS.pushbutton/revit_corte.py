@@ -14,8 +14,9 @@ Como se parte un muro (en una transaccion por muro, todas dentro de un Transacti
      borde inferior y se borran sus copias de los demas tramos, ANTES de cambiar alturas. Las del original se leen
      antes de tocar nada y las de cada copia salen de CopyElement (FindInserts no es confiable con tramos unidos).
      Solo se borra lo que este corte copio (o un original cuya copia lo reemplaza), nunca algo que se conserva.
-     Donde un inserto cruza un corte, se abre un hueco rectangular en el tramo que atraviesa; si Revit no acepta la
-     puerta o ventana partida, ese muro se reintenta moviendo el corte a su antepecho o dintel. Los muros cortina
+     Donde un inserto cruza un corte, queda entero en un tramo y en el otro se abre un hueco rectangular de su vano;
+     si Revit no lo acepta en el tramo de su base, se reintenta dejandolo en el de su tope. La altura de corte nunca
+     cambia sola (eso es «Mover el corte», solo si el usuario lo elige). Los muros cortina
      embebidos no se tocan: se abre hueco en los tramos que atraviesan. Los huecos de muro se recortan a cada tramo.
   5. Al terminar, se verifica parametro por parametro que cada tramo tenga los valores de la foto.
 Las advertencias de Revit se aceptan y se informan; un error deshace solo ese muro, que queda como estaba."""
@@ -635,10 +636,13 @@ def cortar_muro(doc, info, plan, op, diag=DG.NULO):
               por_tramo=[[{"id": d["id"], "copia": d["copia"], "clave": d["clave"], "z_m": (ft_a_m(d["z_inf"]),
                                                                                            ft_a_m(d["z_sup"]))}
                           for d in fam] for fam in por_tramo])
+    regla = op.get("anfitrion", LC.ANFITRION_BASE)
     conservar, borrar, sin_ubicar = LC.asignar_insertos(
-        rangos, [[(d["id"], d["clave"], d["z_inf"], d["copia"]) for d in fam] for fam in por_tramo], TOL_FT)
+        rangos, [[(d["id"], d["clave"], LC.cota_referencia(d["z_inf"], d["z_sup"], regla, TOL_FT), d["copia"])
+                  for d in fam] for fam in por_tramo], TOL_FT)
     res["insertos_sin_ubicar"] = len(sin_ubicar)
-    pedidos = LC.huecos_para_insertos(rangos, [(i, datos[i]["z_inf"], datos[i]["z_sup"]) for i in conservar], TOL_FT)
+    pedidos = LC.huecos_para_insertos(rangos, [(i, datos[i]["z_inf"], datos[i]["z_sup"]) for i in conservar], TOL_FT,
+                                      regla)
     diag.paso("asignacion", conservar=conservar, borrar=borrar, sin_ubicar=sin_ubicar, huecos_pedidos=pedidos)
     res["insertos_borrados"] = _borrar(doc, [datos[i]["eid"] for i in borrar])
     _borrar(doc, otros)
@@ -755,8 +759,9 @@ def cortar_muros(doc, infos, op, diag=DG.NULO):
     """Corta todos los muros (una transaccion por muro dentro de un grupo: un solo Deshacer) y devuelve el reporte
     para logica_corte.texto_reporte, con los Id de los tramos en 'ids_resultado'.
 
-    Si con «Cortar y abrir hueco» Revit rechaza un muro cuyo corte parte una puerta o ventana, ese muro se reintenta
-    solo, moviendo el corte al antepecho o al dintel («Mover el corte»), y el informe lo dice."""
+    Si Revit rechaza un muro con una puerta o ventana que cruza el corte (entera en el tramo de su base y hueco en el
+    otro), ese muro se reintenta dejandola entera en el tramo de su tope y el hueco en el de abajo. La altura de corte
+    no cambia: si tampoco funciona, el muro queda como estaba y el informe y el diagnostico dicen por que."""
     planes = LC.planificar(infos, op)
     rep = {"cortados": [], "omitidos": [], "fallidos": [], "avisos_revit": [], "ids_resultado": []}
     ignorar = (op.get("param_tramo"),) if op.get("param_tramo") else ()
@@ -767,23 +772,22 @@ def cortar_muros(doc, infos, op, diag=DG.NULO):
             if plan["omitir"]:
                 rep["omitidos"].append((info["id"], plan["omitir"]))
                 continue
-            intentos = [(plan, op)]
+            intentos = [(plan, dict(op, anfitrion=LC.ANFITRION_BASE))]
             if plan.get("cruces") and op.get("cruce", LC.CRUCE_HUECO) == LC.CRUCE_HUECO:
-                op_mover = dict(op, cruce=LC.CRUCE_AJUSTAR)
-                plan_mover = LC.planificar([info], op_mover)[0]
-                if not plan_mover["omitir"]:
-                    intentos.append((plan_mover, op_mover))
+                intentos.append((plan, dict(op, anfitrion=LC.ANFITRION_TOPE)))
             hecho, motivo = None, None
             for j, (plan_j, op_j) in enumerate(intentos):
-                diag.paso("intento", muro=info["id"], numero=j + 1, cruce=op_j.get("cruce"), tramos_m=plan_j["tramos"])
+                diag.paso("intento", muro=info["id"], numero=j + 1, cruce=op_j.get("cruce"),
+                          anfitrion=op_j.get("anfitrion"), tramos_m=plan_j["tramos"])
                 try:
                     hecho = _cortar_en_transaccion(doc, info, plan_j, op_j, diag)
                 except Exception as ex:
                     motivo = u"{}".format(ex)
                     continue
                 if j > 0:
-                    hecho[0]["avisos"].insert(0, u"Revit no aceptó la puerta o ventana partida por el corte ({}); "
-                                                 u"se movió el corte para no partirla".format(motivo))
+                    hecho[0]["avisos"].insert(0, u"Revit no aceptó la puerta o ventana en el tramo de su base ({}); "
+                                                 u"quedó entera en el tramo de arriba y el hueco en el de abajo, "
+                                                 u"con la misma altura de corte".format(motivo))
                 break
             if hecho is None:
                 rep["fallidos"].append((info["id"], motivo))

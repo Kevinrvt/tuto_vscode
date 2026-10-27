@@ -93,13 +93,13 @@ ATAJOS = {
 }
 CRUCES = (LC.CRUCE_HUECO, LC.CRUCE_AJUSTAR, LC.CRUCE_OMITIR)
 EXPLICA_CRUCE = {
-    LC.CRUCE_HUECO: u"La puerta o ventana queda entera en el tramo de su base y en el tramo de arriba se abre un hueco "
-                    u"del mismo ancho, para que el muro no la tape. Si Revit no acepta la puerta o ventana partida, "
-                    u"ese muro se corta solo con «Mover el corte» y el informe lo dice. Los muros cortina embebidos "
-                    u"no se mueven: se abre hueco en los tramos que atraviesan. Recomendado.",
-    LC.CRUCE_AJUSTAR: u"En ese muro, el corte se mueve al borde más cercano de la puerta o ventana (su antepecho o su "
-                      u"dintel), para no partirla. Los demás muros se cortan a la altura pedida. La vista previa "
-                      u"muestra dónde queda cada corte.",
+    LC.CRUCE_HUECO: u"Se parte el muro a la altura pedida, nunca la puerta ni la ventana: queda entera en el tramo de "
+                    u"su base y en el otro tramo se abre un hueco del tamaño de su vano, así su espacio queda libre en "
+                    u"los dos. Si Revit no la acepta ahí, se deja entera en el tramo de arriba (el hueco va abajo). La "
+                    u"altura de corte no cambia. Los muros cortina embebidos tampoco se tocan. Recomendado.",
+    LC.CRUCE_AJUSTAR: u"Solo si lo prefieres: en ese muro el corte se mueve al antepecho o al dintel de la puerta o "
+                      u"ventana, para que no la cruce. Ojo: la altura de corte cambia en ese muro (y con ella el "
+                      u"metrado de cada alzada). La vista previa muestra dónde queda cada corte.",
     LC.CRUCE_OMITIR: u"Los muros donde un corte atravesaría una puerta, ventana o muro cortina se dejan como están. "
                      u"La lista indica cuáles y por qué.",
 }

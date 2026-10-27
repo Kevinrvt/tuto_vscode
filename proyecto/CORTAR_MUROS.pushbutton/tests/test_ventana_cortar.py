@@ -107,7 +107,7 @@ class XamlTests(unittest.TestCase):
     def test_politicas_de_cruce_en_el_mismo_orden_que_el_combo(self):
         combo = [n for n in DOM.getElementsByTagName("ComboBox") if n.getAttribute("x:Name") == "CmbCruce"][0]
         textos = [i.getAttribute("Content") for i in combo.getElementsByTagName("ComboBoxItem")]
-        self.assertEqual(textos, [u"Cortar y abrir hueco", u"Mover el corte", u"No cortar ese muro"])
+        self.assertEqual(textos, [u"Partir el muro y dejar su hueco", u"Mover el corte", u"No cortar ese muro"])
 
 
 class ScriptTests(unittest.TestCase):

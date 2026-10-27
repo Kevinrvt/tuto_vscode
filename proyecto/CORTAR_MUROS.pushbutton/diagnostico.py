@@ -16,7 +16,7 @@ import os
 import os.path as op
 import time
 
-VERSION = u"2.3"
+VERSION = u"2.4"
 CARPETA = op.join(op.dirname(op.abspath(__file__)), "diagnostico")
 PREFIJO = "cortar_muros_"
 MAX_ARCHIVOS = 30

@@ -40,8 +40,8 @@ def cargar_revit_corte():
 RC = cargar_revit_corte()
 
 
-def modelo(rechazar_partidos=False, copia_sin_insertos=False):
-    doc = R.Documento(rechazar_partidos, copia_sin_insertos)
+def modelo(rechazar_partidos=False, copia_sin_insertos=False, rechazar_sobresale_arriba=False):
+    doc = R.Documento(rechazar_partidos, copia_sin_insertos, rechazar_sobresale_arriba)
     doc.agregar(R.Level(1, 0.0, u"Nivel 1"))
     doc.agregar(R.Level(2, ft(2.60), u"Nivel 2"))
 
@@ -126,11 +126,13 @@ class CorteTests(unittest.TestCase):
         self.assertEqual(rep["fallidos"], [])
         self.assertEqual(puertas_y_ventanas(doc), {11: 10, 21: 20})
 
-    def test_copyelement_sin_puertas_y_revit_que_rechaza_partidos(self):
-        doc, muros = modelo(rechazar_partidos=True, copia_sin_insertos=True)
+    def test_copyelement_sin_puertas_y_revit_que_rechaza_la_puerta_abajo(self):
+        doc, muros = modelo(rechazar_sobresale_arriba=True, copia_sin_insertos=True)
         _, rep = cortar(doc, muros)
         self.assertEqual(rep["fallidos"], [])
         self.assertEqual(len(puertas_y_ventanas(doc)), 2)
+        for m in muros:
+            self.assertEqual(altura_m(m), (0.0, 1.5))
 
     def test_las_copias_sobrantes_se_borran_antes_de_cambiar_alturas(self):
         # Revit ve el modelo al regenerar: si al cambiar alturas aun hay dos ventanas iguales, las rechaza
@@ -141,24 +143,30 @@ class CorteTests(unittest.TestCase):
         self.assertTrue(borrar)
         self.assertLess(max(borrar), min(alturas))
 
-    def test_si_revit_rechaza_la_ventana_partida_se_mueve_el_corte(self):
-        doc, muros = modelo(rechazar_partidos=True)
+    def test_si_revit_no_la_acepta_abajo_queda_entera_arriba_sin_mover_el_corte(self):
+        # Se parten los muros, no las puertas ni las ventanas, y la altura de corte se respeta siempre.
+        doc, muros = modelo(rechazar_sobresale_arriba=True)
         _, rep = cortar(doc, muros)
         self.assertEqual(rep["fallidos"], [])
-        self.assertEqual(len(rep["cortados"]), 3)
         por_id = dict((c["id"], c) for c in rep["cortados"])
-        self.assertTrue(any(u"Revit no aceptó" in a for a in por_id[10]["avisos"]))
-        # ventana: el corte baja al antepecho (1.00) y la ventana queda entera en el tramo de arriba
-        self.assertEqual(altura_m(muros[0]), (0.0, 1.0))
+        self.assertTrue(any(u"tramo de arriba" in a for a in por_id[10]["avisos"]))
+        for m in muros:
+            self.assertEqual(altura_m(m), (0.0, 1.5))                 # el corte sigue a 1.50 en los tres
         vivos = puertas_y_ventanas(doc)
-        self.assertEqual(len(vivos), 2)
-        self.assertEqual(vivos.get(11, vivos.get(max(vivos))), por_id[10]["piezas"][1])
-        # puerta: el corte sube al dintel (2.10) y la puerta original queda entera abajo
-        self.assertEqual(altura_m(muros[1]), (0.0, 2.1))
-        self.assertEqual(vivos[21], 20)
-        # el muro liso se corta a la altura pedida
-        self.assertEqual(altura_m(muros[2]), (0.0, 1.5))
+        self.assertEqual(sorted(vivos.values()), sorted([por_id[10]["piezas"][1], por_id[20]["piezas"][1]]))
+        # el espacio de la puerta y de la ventana queda libre en el tramo de abajo (el original)
+        huecos = sorted((m, round(a * PIE, 2), round(b * PIE, 2)) for m, a, b in doc.huecos)
+        self.assertEqual(huecos, [(10, 1.0, 1.5), (20, 0.0, 1.5)])
+
+    def test_si_revit_no_acepta_ninguna_el_muro_queda_como_estaba(self):
+        doc, muros = modelo(rechazar_partidos=True)
+        _, rep = cortar(doc, muros)
+        self.assertEqual(sorted(i for i, _ in rep["fallidos"]), [10, 20])
+        self.assertEqual(altura_m(muros[0]), (0.0, 2.6))              # sin cambios: ni partido ni con otro corte
+        self.assertEqual(altura_m(muros[1]), (0.0, 2.6))
+        self.assertEqual(puertas_y_ventanas(doc), {11: 10, 21: 20})
         self.assertEqual(doc.huecos, [])
+        self.assertEqual(altura_m(muros[2]), (0.0, 1.5))              # el muro liso si se corta
 
     def test_mover_el_corte_desde_el_inicio(self):
         doc, muros = modelo(rechazar_partidos=True)

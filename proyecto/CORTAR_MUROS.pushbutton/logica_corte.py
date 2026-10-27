@@ -13,10 +13,13 @@ modulo estan en METROS; revit_corte.py convierte a pies al tocar el modelo.
 Un corte que deja un tramo menor que el tramo minimo (por defecto 5 cm) no se hace: evita tiras de muro sin sentido
 cuando una altura cae justo en el tope o la base. Se informa como corte ignorado.
 
-Puertas, ventanas y muros cortina embebidos solo abren el muro que los hospeda: si un corte los atraviesa, el otro
-tramo quedaria lleno delante de ellos. Que hacer en ese caso lo decide la politica de cruce:
-  hueco    cortar igual: el inserto queda entero en el tramo de su base y en el otro tramo se abre un hueco;
-  ajustar  mover ese corte al borde mas cercano del inserto (su antepecho o su dintel), para no partirlo;
+Se parten los MUROS, nunca las puertas ni las ventanas, y el espacio que ocupan se respeta en todos los tramos. Una
+puerta o ventana solo abre el muro que la hospeda: si un corte la atraviesa, el otro tramo quedaria lleno delante de
+ella. Que hacer en ese caso lo decide la politica de cruce:
+  hueco    (la regla) partir el muro a la altura pedida: la puerta o ventana queda ENTERA en un tramo (el de su base;
+           si Revit no la acepta ahi, el de su tope) y en los demas tramos que atraviesa se abre un hueco del tamano
+           de su vano. La altura de corte no cambia;
+  ajustar  solo si el usuario lo elige: mover ese corte al antepecho o al dintel, para que no la cruce;
   omitir   no cortar ese muro."""
 from __future__ import division
 
@@ -28,6 +31,9 @@ REF_BASE, REF_NIVEL = "base", "nivel"
 ORIGINAL_INFERIOR, ORIGINAL_SUPERIOR = "inferior", "superior"
 CRUCE_HUECO, CRUCE_AJUSTAR, CRUCE_OMITIR = "hueco", "ajustar", "omitir"
 CRUCES = (CRUCE_HUECO, CRUCE_AJUSTAR, CRUCE_OMITIR)
+# En que tramo queda entera una puerta o ventana que cruza un corte: el de su base o, si Revit no la acepta ahi, el
+# de su tope. El otro tramo lleva el hueco.
+ANFITRION_BASE, ANFITRION_TOPE = "base", "tope"
 # Lo que el corte no debe partir (los huecos de muro, Opening, si se pueden recortar a cada tramo).
 TIPOS_BLOQUEO = (u"puerta", u"ventana", u"muro cortina", u"muro embebido", u"inserto")
 TOL_M = 0.005
@@ -225,7 +231,7 @@ def planificar(infos, op):
         if aviso:
             plan["avisos"].append(aviso)
         if plan["cruces"]:
-            plan["avisos"].append(u"queda entero en el tramo de su base y se abre hueco en el otro: {}".format(
+            plan["avisos"].append(u"no se parte: queda entera en un tramo y el otro lleva su hueco: {}".format(
                 u", ".join(plan["cruces"])) if info.get("recto", True) else
                 u"es curvo: el hueco para {} hay que abrirlo a mano".format(u", ".join(plan["cruces"])))
         if plan["ignorados"]:
@@ -241,6 +247,12 @@ def tramo_de_cota(rangos, z, tol):
         if z < hi - tol:
             return i
     return len(rangos) - 1
+
+
+def cota_referencia(zi, zs, regla, tol):
+    """La cota que decide el tramo anfitrion de un inserto: su borde inferior ('base') o, justo por debajo, su borde
+    superior ('tope')."""
+    return zs - 2 * tol if regla == ANFITRION_TOPE else zi
 
 
 def asignar_insertos(rangos, insertos_por_tramo, tol):
@@ -288,15 +300,15 @@ def recortar(zi, zs, lo, hi, tol):
     return (a, b) if b - a > tol else None
 
 
-def huecos_para_insertos(rangos, insertos, tol):
+def huecos_para_insertos(rangos, insertos, tol, regla=ANFITRION_BASE):
     """Huecos que hay que abrir donde un inserto cruza un corte.
 
-    insertos: (id, z_inferior, z_superior) de los insertos conservados. El inserto se queda en el tramo de su borde
-    inferior y solo abre ese muro: en los demas tramos que atraviesa (una puerta de 2.10 m con corte a 1.50 m: de 1.50
-    a 2.10 en el tramo de arriba) el muro quedaria lleno. Devuelve [(indice_tramo, id, z_lo, z_hi)]."""
+    insertos: (id, z_inferior, z_superior) de los insertos conservados. El inserto queda entero en su tramo anfitrion
+    (segun 'regla') y solo abre ese muro: en los demas tramos que atraviesa (una puerta de 2.10 m con corte a 1.50 m:
+    de 1.50 a 2.10 en el tramo de arriba) el muro quedaria lleno. Devuelve [(indice_tramo, id, z_lo, z_hi)]."""
     pedidos = []
     for iid, zi, zs in insertos:
-        k = tramo_de_cota(rangos, zi, tol)
+        k = tramo_de_cota(rangos, cota_referencia(zi, zs, regla, tol), tol)
         for i, (lo, hi) in enumerate(rangos):
             if i == k:
                 continue

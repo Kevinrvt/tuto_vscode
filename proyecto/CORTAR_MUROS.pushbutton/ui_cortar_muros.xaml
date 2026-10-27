@@ -223,7 +223,7 @@
 <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 <TextBlock Text="Si un corte los cruza" Style="{StaticResource Etiqueta}" ToolTip="Qué hacer cuando la altura de corte atraviesa una puerta, una ventana o un muro cortina embebido."/>
 <ComboBox x:Name="CmbCruce" Grid.Column="1" SelectedIndex="0" ToolTip="Qué hacer cuando la altura de corte atraviesa una puerta, una ventana o un muro cortina embebido.">
-<ComboBoxItem Content="Cortar y abrir hueco"/><ComboBoxItem Content="Mover el corte"/><ComboBoxItem Content="No cortar ese muro"/>
+<ComboBoxItem Content="Partir el muro y dejar su hueco"/><ComboBoxItem Content="Mover el corte"/><ComboBoxItem Content="No cortar ese muro"/>
 </ComboBox>
 </Grid>
 <TextBlock x:Name="TxtExplicaCruce" Style="{StaticResource Nota}"/>
@@ -281,7 +281,7 @@
 <StackPanel Orientation="Horizontal" Margin="0,0,16,0"><Rectangle Width="16" Height="11" Fill="{DynamicResource Acento}" Opacity="0.4" Stroke="{DynamicResource Acento}" StrokeThickness="2.5" VerticalAlignment="Center"/><TextBlock Text="Conserva el muro original" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
 <StackPanel Orientation="Horizontal" Margin="0,0,16,0"><Line X1="0" Y1="6" X2="18" Y2="6" Stroke="{DynamicResource Acento}" StrokeThickness="1.6" StrokeDashArray="3 2" VerticalAlignment="Center"/><TextBlock Text="Corte" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
 <StackPanel Orientation="Horizontal" Margin="0,0,16,0"><Rectangle Width="10" Height="12" Fill="{DynamicResource FondoLienzo}" Stroke="{DynamicResource Texto}" StrokeThickness="1" VerticalAlignment="Center"/><TextBlock Text="Puerta, ventana o muro cortina" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
-<StackPanel Orientation="Horizontal"><Rectangle Width="10" Height="12" Fill="{DynamicResource FondoLienzo}" Stroke="{DynamicResource Acento}" StrokeThickness="2.2" VerticalAlignment="Center"/><TextBlock Text="Cruzado por un corte" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
+<StackPanel Orientation="Horizontal"><Rectangle Width="10" Height="12" Fill="{DynamicResource FondoLienzo}" Stroke="{DynamicResource Acento}" StrokeThickness="2.2" VerticalAlignment="Center"/><TextBlock Text="Cruza el corte: queda entera y el otro tramo lleva su hueco" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
 </WrapPanel>
 <Border Background="{DynamicResource FondoLienzo}" BorderBrush="{DynamicResource Borde}" BorderThickness="1" CornerRadius="5" ClipToBounds="True">
 <Canvas x:Name="CanvasPrevia" ClipToBounds="True"/>
