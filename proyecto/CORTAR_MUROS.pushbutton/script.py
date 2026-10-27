@@ -572,7 +572,8 @@ def ejecutar(uidoc):
     def avisar(texto, **k):
         """El mensaje para el usuario, con la ruta del diagnostico al final (se guarda siempre que se corto algo o
         hubo un error)."""
-        ruta = diag.guardar()
+        try:ruta = diag.guardar()
+        except Exception:ruta = None
         if ruta:
             texto += u"\n\nDiagnóstico guardado en:\n{}".format(ruta)
         forms.alert(texto, title=TITULO, **k)

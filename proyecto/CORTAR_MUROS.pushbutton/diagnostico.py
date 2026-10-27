@@ -11,19 +11,21 @@ Donde queda: en la carpeta diagnostico/ junto a este boton (pyRevit no la toma c
 cortar_muros_AAAAMMDD_HHMMSS.json y reemplaza ultimo.json; se conservan los ultimos MAX_ARCHIVOS.
 
 Nada de este modulo interrumpe el corte: si algo falla al registrar, se anota en 'errores_diagnostico' y se sigue."""
-import json
 import os
 import os.path as op
 import time
 
-VERSION = u"2.4"
+import json_seguro as JS
+
+VERSION = u"2.5"
 CARPETA = op.join(op.dirname(op.abspath(__file__)), "diagnostico")
 PREFIJO = "cortar_muros_"
 MAX_ARCHIVOS = 30
 
 
 def limpio(v, profundidad=0):
-    """Lo mismo, pero que json pueda escribir: objetos de .NET o de Revit pasan a texto y los decimales se redondean."""
+    """Lo mismo, pero solo con lo que json_seguro sabe escribir: objetos de .NET o de Revit pasan a texto y los
+    decimales se redondean."""
     if profundidad > 12:
         return u"..."
     if v is None or isinstance(v, bool):
@@ -74,8 +76,13 @@ class Diagnostico(object):
             pass
 
     def guardar(self, carpeta=None):
-        """Ruta del JSON guardado, o None si no se pudo escribir en ninguna parte."""
-        texto = json.dumps(limpio(self.datos), indent=2, ensure_ascii=True)
+        """Ruta del JSON guardado, o None si no se pudo escribir en ninguna parte. Nunca lanza: guardar el diagnostico
+        no puede impedir que el usuario vea el informe (en la 2.4 un error aqui lo escondia)."""
+        try:
+            texto = JS.a_json(limpio(self.datos))
+        except Exception as ex:
+            try:texto = JS.a_json({"error_al_guardar_diagnostico": u"{}".format(ex)})
+            except Exception:return None
         nombre = PREFIJO + time.strftime("%Y%m%d_%H%M%S") + ".json"
         for c in (carpeta or CARPETA, op.join(os.environ.get("TEMP") or os.environ.get("TMP") or ".",
                                                "DENOVA_cortar_muros")):

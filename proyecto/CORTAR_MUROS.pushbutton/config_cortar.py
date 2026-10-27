@@ -7,6 +7,8 @@ propaga a la ventana un valor roto y recordar nunca impide cortar. Ninguna funci
 import json
 import os.path as op
 
+import json_seguro as JS
+
 NOMBRE_ARCHIVO = "ultima_configuracion.json"
 RUTA_CONFIG = op.join(op.dirname(op.abspath(__file__)), NOMBRE_ARCHIVO)
 TEMAS = ("Claro", "Oscuro")
@@ -67,7 +69,7 @@ def guardar(cfg):
             datos[clave] = cfg[clave]
     try:
         with open(RUTA_CONFIG, "w") as f:
-            json.dump(datos, f, indent=2)
+            f.write(JS.a_json(datos))           # no json.dump: en IronPython falla con tildes (ver json_seguro.py)
     except Exception:
         pass
 
