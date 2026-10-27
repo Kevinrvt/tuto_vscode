@@ -514,6 +514,21 @@ class VentanaCorte(forms.WPFWindow):
                      12, 14, "Texto", 12.0, True)
         self._rotulo(u"Largo {:.2f} m  ·  Altura {:.2f} m".format(largo, altura), 12, 32, "TextoSuave", 11.0)
 
+    # ---- tema ----
+    def _tema_elegido(self, sender, args):
+        tema = "Oscuro" if self.CmbTema.SelectedIndex == 1 else "Claro"
+        self._aplicar_tema(tema)
+        CFG.guardar_tema(tema)
+
+    def _aplicar_tema(self, tema):
+        conv = Media.BrushConverter()
+        i = 1 if tema == "Oscuro" else 0
+        for nombre, par in COLORES_TEMA.items():
+            pincel = conv.ConvertFromString(par[i])
+            if nombre == "Borde":pincel.Opacity = 0.22
+            elif nombre == "BordeControl":pincel.Opacity = 0.55
+            self.Resources[nombre] = pincel
+
 
 def _s(n):
     return u"" if n == 1 else u"s"

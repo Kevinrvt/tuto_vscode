@@ -71,12 +71,12 @@ def validar_opciones(op):
     if op.get("modo") not in MODOS:
         return u"Elige cómo cortar: una altura, varias alturas o alzadas."
     valores = op.get("valores") or []
+    if op.get("error_valores"):
+        return u"«{}» no es una altura válida.".format(op["error_valores"])
     if not valores:
         return {MODO_UNA: u"Escribe la altura de corte en metros (por ejemplo 1.50).",
                 MODO_VARIAS: u"Escribe las alturas de corte separadas con punto y coma (por ejemplo 1.20; 2.40).",
                 MODO_ALZADAS: u"Escribe la altura de cada alzada en metros (por ejemplo 1.30)."}[op["modo"]]
-    if op.get("error_valores"):
-        return u"«{}» no es una altura válida.".format(op["error_valores"])
     if op["modo"] == MODO_ALZADAS and valores[0] <= 0:
         return u"La alzada tiene que ser mayor que cero."
     if any(v <= 0 for v in valores) and op.get("referencia") != REF_NIVEL:

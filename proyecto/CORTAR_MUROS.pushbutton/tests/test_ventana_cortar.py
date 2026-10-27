@@ -84,6 +84,20 @@ class XamlTests(unittest.TestCase):
         for par in tema.values():
             self.assertEqual(len(par), 2)
 
+    def test_todo_metodo_que_usa_la_ventana_existe(self):
+        # La ventana solo corre dentro de Revit: un self._metodo que no existe pasa todas las pruebas en CPython y
+        # truena al abrirla (paso con _aplicar_tema). Se compara cada self.x que se usa con lo que define la clase.
+        clase = [n for n in ast.parse(SCRIPT).body if isinstance(n, ast.ClassDef) and n.name == "VentanaCorte"][0]
+        definidos = set(f.name for f in clase.body if isinstance(f, ast.FunctionDef))
+        asignados = set()
+        usados = set()
+        for nodo in ast.walk(clase):
+            if isinstance(nodo, ast.Attribute) and isinstance(nodo.value, ast.Name) and nodo.value.id == "self":
+                (asignados if isinstance(nodo.ctx, ast.Store) else usados).add(nodo.attr)
+        heredados = {"Close", "Resources", "FindResource", "Width", "Height", "Content"}
+        faltan = usados - definidos - asignados - nombres_xaml() - heredados
+        self.assertFalse(faltan, "VentanaCorte usa atributos que no define: {}".format(sorted(faltan)))
+
     def test_modos_de_corte_y_de_vista_son_grupos_separados(self):
         radios = DOM.getElementsByTagName("RadioButton")
         grupos = dict((r.getAttribute("x:Name"), r.getAttribute("GroupName") or "ModoCorte") for r in radios)
