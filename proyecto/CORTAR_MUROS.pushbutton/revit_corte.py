@@ -11,10 +11,12 @@ Como se parte un muro (en una transaccion por muro, todas dentro de un Transacti
      desfase de base mayor; los de abajo quedan con altura desconectada y el de arriba conserva la restriccion
      superior del original (su nivel y su desfase superior).
   4. Puertas y ventanas: copiar un muro copia sus insertos, asi que cada una queda solo en el tramo donde cae su
-     borde inferior y se borran sus copias de los demas tramos. Solo se borra lo que este corte copio (o un original
-     cuya copia lo reemplaza), nunca algo que se conserva. Donde un inserto cruza un corte, se abre un hueco
-     rectangular en el tramo que atraviesa. Los muros cortina embebidos no se tocan: se abre hueco en los tramos que
-     atraviesan. Los huecos de muro (Opening) se recortan a cada tramo.
+     borde inferior y se borran sus copias de los demas tramos, ANTES de cambiar alturas. Las del original se leen
+     antes de tocar nada y las de cada copia salen de CopyElement (FindInserts no es confiable con tramos unidos).
+     Solo se borra lo que este corte copio (o un original cuya copia lo reemplaza), nunca algo que se conserva.
+     Donde un inserto cruza un corte, se abre un hueco rectangular en el tramo que atraviesa; si Revit no acepta la
+     puerta o ventana partida, ese muro se reintenta moviendo el corte a su antepecho o dintel. Los muros cortina
+     embebidos no se tocan: se abre hueco en los tramos que atraviesan. Los huecos de muro se recortan a cada tramo.
   5. Al terminar, se verifica parametro por parametro que cada tramo tenga los valores de la foto.
 Las advertencias de Revit se aceptan y se informan; un error deshace solo ese muro, que queda como estaba."""
 from __future__ import division
@@ -510,12 +512,33 @@ def cortar_muro(doc, info, plan, op):
     res = {"id": info["id"], "piezas": [], "param_copiados": 0, "param_fallos": [], "insertos_borrados": 0,
            "insertos_sin_ubicar": 0, "huecos": 0, "huecos_fallidos": 0, "otros_borrados": {}, "embebidos": 0,
            "avisos": list(plan.get("avisos", []))}
+    rangos = [(info["base_z"] + a, info["base_z"] + b) for a, b in tramos]
 
-    # 1. copias (antes de cambiar nada del original) con la foto de parametros
-    piezas, restos, copiados_ids = [], [], set()      # copiados_ids: todo lo que ESTE corte creo al copiar
+    # 1. Lo que hospeda el original se lee AHORA, antes de tocar nada: despues de cortar, Revit une los tramos
+    # apilados y FindInserts deja de devolver bien sus puertas y ventanas (las copias quedaban sin borrar, duplicadas,
+    # y Revit rechazaba el muro: "ejemplares idénticos en la misma ubicación", "ejemplares que no cortan nada").
+    originales = _insertos(doc, muro)
+    por_tramo, aberturas, otros = [[] for _ in range(n)], [[] for _ in range(n)], []
+    datos = {}
+
+    def registrar(i, e, es_copia):
+        d = _datos_inserto(doc, e)
+        if d is not None:
+            d["copia"] = es_copia
+            datos[d["id"]] = d
+            por_tramo[i].append(d)
+
+    # 2. copias (antes de cambiar nada del original) con la foto de parametros. Lo que Revit copio con cada una sale
+    # directamente de CopyElement: sus puertas y ventanas, sus huecos y lo demas (armaduras, muros embebidos...).
+    piezas = []
     for i in range(n):
         if i == k:
             piezas.append(muro)
+            for e in originales:
+                if isinstance(e, DB.Opening):
+                    aberturas[i].append(e)
+                elif not isinstance(e, DB.Wall):
+                    registrar(i, e, False)
             continue
         copia, resto = _copiar_muro(doc, muro)
         copiados, fallos = escribir_parametros(copia, foto)
@@ -523,57 +546,34 @@ def cortar_muro(doc, info, plan, op):
         for f in fallos:
             if f not in res["param_fallos"]:res["param_fallos"].append(f)
         piezas.append(copia)
-        restos.extend(resto)
-        copiados_ids.add(_id_num(copia.Id))
-        copiados_ids.update(_id_num(x) for x in resto)
-
-    # 2. altura de cada tramo
-    for i, (a, b) in enumerate(tramos):
-        ajustar_tramo(piezas[i], a, b, i == n - 1, info)
-    doc.Regenerate()
-    rangos = [(info["base_z"] + a, info["base_z"] + b) for a, b in tramos]
-
-    # 3. insertos: cada uno en el tramo de su base; los huecos de muro, recortados a cada tramo
-    por_tramo, aberturas, conocidos, embebidos_copiados = [], [], set(), []
-    for pieza in piezas:
-        fam, abert = [], []
-        for e in _insertos(doc, pieza):
-            iid = _id_num(e.Id)
-            if iid in conocidos:
+        for eid in resto:
+            e = doc.GetElement(eid)
+            if e is None:
                 continue
-            conocidos.add(iid)
             if isinstance(e, DB.Opening):
-                abert.append(e)
-            elif isinstance(e, DB.Wall):
-                if iid in copiados_ids:embebidos_copiados.append(e.Id)
+                aberturas[i].append(e)
+            elif isinstance(e, DB.FamilyInstance):
+                registrar(i, e, True)
             else:
-                d = _datos_inserto(doc, e)
-                if d is not None:
-                    d["copia"] = iid in copiados_ids
-                    fam.append(d)
-        por_tramo.append(fam)
-        aberturas.append(abert)
-    datos = dict((d["id"], d) for fam in por_tramo for d in fam)
+                # un muro cortina embebido o armaduras hospedadas quedarian duplicados: el original sigue en su lugar
+                if not isinstance(e, DB.Wall):
+                    cat = _nombre(e.Category, u"otros") if e.Category is not None else u"otros"
+                    res["otros_borrados"][cat] = res["otros_borrados"].get(cat, 0) + 1
+                otros.append(eid)
+
+    # 3. Cada puerta o ventana queda en el tramo de su base y se borran sus copias sobrantes ANTES de cambiar las
+    # alturas: asi Revit nunca ve dos puertas iguales en el mismo lugar ni una puerta fuera de su muro.
     conservar, borrar, sin_ubicar = LC.asignar_insertos(
         rangos, [[(d["id"], d["clave"], d["z_inf"], d["copia"]) for d in fam] for fam in por_tramo], TOL_FT)
     res["insertos_sin_ubicar"] = len(sin_ubicar)
     pedidos = LC.huecos_para_insertos(rangos, [(i, datos[i]["z_inf"], datos[i]["z_sup"]) for i in conservar], TOL_FT)
     res["insertos_borrados"] = _borrar(doc, [datos[i]["eid"] for i in borrar])
-
-    # Lo demas que Revit copio con el muro (un muro cortina embebido, armaduras hospedadas...) quedaria duplicado: se
-    # borra de las copias; el original sigue intacto en su lugar. Solo se borra lo que este corte copio.
-    otros = list(embebidos_copiados)
-    for eid in restos:
-        e = doc.GetElement(eid)
-        if e is None or _id_num(eid) in conocidos:
-            continue
-        if isinstance(e, DB.Wall):
-            otros.append(eid)
-            continue
-        cat = _nombre(e.Category, u"otros") if e.Category is not None else u"otros"
-        res["otros_borrados"][cat] = res["otros_borrados"].get(cat, 0) + 1
-        otros.append(eid)
     _borrar(doc, otros)
+
+    # 4. altura de cada tramo
+    for i, (a, b) in enumerate(tramos):
+        ajustar_tramo(piezas[i], a, b, i == n - 1, info)
+    doc.Regenerate()
 
     def abrir(i, punto, ancho, zlo, zhi):
         try:
@@ -621,7 +621,7 @@ def cortar_muro(doc, info, plan, op):
             except Exception:
                 res["huecos_fallidos"] += 1
 
-    # 4. el tramo en un parametro de texto (A1, A2...), si se pidio
+    # 5. el tramo en un parametro de texto (A1, A2...), si se pidio
     nombre_param = op.get("param_tramo")
     if nombre_param:
         for i, pieza in enumerate(piezas):
@@ -636,9 +636,34 @@ def cortar_muro(doc, info, plan, op):
     return res, foto
 
 
+def _cortar_en_transaccion(doc, info, plan, op):
+    """(res, foto, avisos) si Revit confirmo el corte de este muro; si no, lanza con el motivo. La transaccion es solo
+    de este muro: si falla, el muro queda como estaba."""
+    pre = Preprocesador()
+    tr = DB.Transaction(doc, u"{} · Id {}".format(TITULO_DESHACER, info["id"]))
+    opciones = tr.GetFailureHandlingOptions()
+    opciones.SetFailuresPreprocessor(pre)
+    opciones.SetClearAfterRollback(True)
+    tr.SetFailureHandlingOptions(opciones)
+    tr.Start()
+    try:
+        res, foto = cortar_muro(doc, info, plan, op)
+        estado = tr.Commit()
+    except Exception:
+        if tr.GetStatus() == DB.TransactionStatus.Started:
+            tr.RollBack()
+        raise
+    if estado != DB.TransactionStatus.Committed:
+        raise Exception(u"; ".join(pre.errores) or u"Revit no confirmó el cambio")
+    return res, foto, pre.avisos
+
+
 def cortar_muros(doc, infos, op):
     """Corta todos los muros (una transaccion por muro dentro de un grupo: un solo Deshacer) y devuelve el reporte
-    para logica_corte.texto_reporte, con los Id de los tramos en 'ids_resultado'."""
+    para logica_corte.texto_reporte, con los Id de los tramos en 'ids_resultado'.
+
+    Si con «Cortar y abrir hueco» Revit rechaza un muro cuyo corte parte una puerta o ventana, ese muro se reintenta
+    solo, moviendo el corte al antepecho o al dintel («Mover el corte»), y el informe lo dice."""
     planes = LC.planificar(infos, op)
     rep = {"cortados": [], "omitidos": [], "fallidos": [], "avisos_revit": [], "ids_resultado": []}
     ignorar = (op.get("param_tramo"),) if op.get("param_tramo") else ()
@@ -649,25 +674,28 @@ def cortar_muros(doc, infos, op):
             if plan["omitir"]:
                 rep["omitidos"].append((info["id"], plan["omitir"]))
                 continue
-            pre = Preprocesador()
-            tr = DB.Transaction(doc, u"{} · Id {}".format(TITULO_DESHACER, info["id"]))
-            opciones = tr.GetFailureHandlingOptions()
-            opciones.SetFailuresPreprocessor(pre)
-            opciones.SetClearAfterRollback(True)
-            tr.SetFailureHandlingOptions(opciones)
-            tr.Start()
-            try:
-                res, foto = cortar_muro(doc, info, plan, op)
-                estado = tr.Commit()
-            except Exception as ex:
-                if tr.GetStatus() == DB.TransactionStatus.Started:
-                    tr.RollBack()
-                rep["fallidos"].append((info["id"], u"{}".format(ex)))
+            intentos = [(plan, op)]
+            if plan.get("cruces") and op.get("cruce", LC.CRUCE_HUECO) == LC.CRUCE_HUECO:
+                op_mover = dict(op, cruce=LC.CRUCE_AJUSTAR)
+                plan_mover = LC.planificar([info], op_mover)[0]
+                if not plan_mover["omitir"]:
+                    intentos.append((plan_mover, op_mover))
+            hecho, motivo = None, None
+            for j, (plan_j, op_j) in enumerate(intentos):
+                try:
+                    hecho = _cortar_en_transaccion(doc, info, plan_j, op_j)
+                except Exception as ex:
+                    motivo = u"{}".format(ex)
+                    continue
+                if j > 0:
+                    hecho[0]["avisos"].insert(0, u"Revit no aceptó la puerta o ventana partida por el corte ({}); "
+                                                 u"se movió el corte para no partirla".format(motivo))
+                break
+            if hecho is None:
+                rep["fallidos"].append((info["id"], motivo))
                 continue
-            if estado != DB.TransactionStatus.Committed:
-                rep["fallidos"].append((info["id"], u"; ".join(pre.errores) or u"Revit no confirmó el cambio"))
-                continue
-            for a in pre.avisos:
+            res, foto, avisos = hecho
+            for a in avisos:
                 if a not in rep["avisos_revit"]:rep["avisos_revit"].append(a)
             piezas = res.pop("_elementos")
             dif = []

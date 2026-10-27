@@ -94,8 +94,9 @@ ATAJOS = {
 CRUCES = (LC.CRUCE_HUECO, LC.CRUCE_AJUSTAR, LC.CRUCE_OMITIR)
 EXPLICA_CRUCE = {
     LC.CRUCE_HUECO: u"La puerta o ventana queda entera en el tramo de su base y en el tramo de arriba se abre un hueco "
-                    u"del mismo ancho, para que el muro no la tape. Los muros cortina embebidos no se mueven: se abre "
-                    u"hueco en los tramos que atraviesan. Recomendado.",
+                    u"del mismo ancho, para que el muro no la tape. Si Revit no acepta la puerta o ventana partida, "
+                    u"ese muro se corta solo con «Mover el corte» y el informe lo dice. Los muros cortina embebidos "
+                    u"no se mueven: se abre hueco en los tramos que atraviesan. Recomendado.",
     LC.CRUCE_AJUSTAR: u"En ese muro, el corte se mueve al borde más cercano de la puerta o ventana (su antepecho o su "
                       u"dintel), para no partirla. Los demás muros se cortan a la altura pedida. La vista previa "
                       u"muestra dónde queda cada corte.",
