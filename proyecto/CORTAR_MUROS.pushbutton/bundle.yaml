@@ -1,0 +1,3 @@
+title: "CORTAR MUROS"
+tooltip: "Parte uno o varios muros a una o varias alturas (por ejemplo, en alzadas de 1.50 m) sin perder sus parámetros. Cada tramo conserva el tipo, el nivel y todos los parámetros de instancia del original; puertas y ventanas quedan en el tramo de su base. Vista previa antes de cortar y un solo Deshacer."
+author: "DENOVA"

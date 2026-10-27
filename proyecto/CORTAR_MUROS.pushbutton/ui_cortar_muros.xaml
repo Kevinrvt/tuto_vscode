@@ -1,0 +1,249 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="DENOVA - Cortar muros" Height="780" Width="1240" MinHeight="580" MinWidth="960" WindowStartupLocation="CenterScreen" ResizeMode="CanResize" Background="{DynamicResource FondoVentana}" Foreground="{DynamicResource Texto}" FontFamily="{DynamicResource FuenteInterfaz}" FontSize="12.5" FontWeight="Normal" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+<Window.Resources><FontFamily x:Key="FuenteInterfaz">Segoe UI</FontFamily>
+<!-- Paleta DENOVA (tema claro): script.py la cambia con el tema (COLORES_TEMA). Las mismas claves que COLUMNAS. -->
+<SolidColorBrush x:Key="Acento" Color="#008080"/>
+<SolidColorBrush x:Key="Resaltado" Color="#008080"/>
+<SolidColorBrush x:Key="Borde" Color="#404040" Opacity="0.22"/>
+<SolidColorBrush x:Key="BordeControl" Color="#404040" Opacity="0.55"/>
+<SolidColorBrush x:Key="Deshabilitado" Color="#404040"/>
+<SolidColorBrush x:Key="Error" Color="#000000"/>
+<SolidColorBrush x:Key="FondoControl" Color="#FFFFFF"/>
+<SolidColorBrush x:Key="FondoDeshabilitado" Color="#FFFFFF"/>
+<SolidColorBrush x:Key="FondoLienzo" Color="#FFFFFF"/>
+<SolidColorBrush x:Key="FondoPanel" Color="#FFFFFF"/>
+<SolidColorBrush x:Key="FondoTarjeta" Color="#FFFFFF"/>
+<SolidColorBrush x:Key="FondoVentana" Color="#FFFFFF"/>
+<SolidColorBrush x:Key="Hover" Color="#008080"/>
+<SolidColorBrush x:Key="Texto" Color="#000000"/>
+<SolidColorBrush x:Key="TextoAcento" Color="#008080"/>
+<SolidColorBrush x:Key="TextoSuave" Color="#404040"/>
+
+<Style TargetType="{x:Type TextBox}"><Setter Property="Foreground" Value="{DynamicResource Texto}"/><Setter Property="Background" Value="{DynamicResource FondoControl}"/><Setter Property="CaretBrush" Value="{DynamicResource Texto}"/><Setter Property="SelectionBrush" Value="{DynamicResource Acento}"/><Setter Property="ToolTipService.ShowOnDisabled" Value="True"/><Setter Property="ToolTipService.InitialShowDelay" Value="400"/><Setter Property="ToolTipService.ShowDuration" Value="30000"/><Setter Property="Height" Value="32"/><Setter Property="Padding" Value="7,3"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="BorderBrush" Value="{DynamicResource BordeControl}"/><Setter Property="FontSize" Value="12.5"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type TextBox}">
+<Border x:Name="Campo" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5">
+<ScrollViewer x:Name="PART_ContentHost" Margin="0" VerticalAlignment="Center"/>
+</Border><ControlTemplate.Triggers>
+<Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Campo" Property="BorderBrush" Value="{DynamicResource Acento}"/><Setter TargetName="Campo" Property="BorderThickness" Value="2"/></Trigger>
+</ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+<Style.Triggers>
+<Trigger Property="IsEnabled" Value="False"><Setter Property="Background" Value="{DynamicResource FondoDeshabilitado}"/><Setter Property="Foreground" Value="{DynamicResource Deshabilitado}"/><Setter Property="Opacity" Value="0.6"/></Trigger>
+</Style.Triggers>
+</Style>
+
+<Style TargetType="{x:Type ComboBox}"><Setter Property="Foreground" Value="{DynamicResource Texto}"/><Setter Property="Background" Value="{DynamicResource FondoControl}"/><Setter Property="BorderBrush" Value="{DynamicResource BordeControl}"/><Setter Property="Template"><Setter.Value>
+<ControlTemplate TargetType="{x:Type ComboBox}">
+<Grid>
+<Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/></Grid.ColumnDefinitions>
+<Border x:Name="MarcoCombo" Grid.ColumnSpan="2" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="3"/>
+<ToggleButton Grid.ColumnSpan="2" Focusable="False" ClickMode="Press" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+<ToggleButton.Template><ControlTemplate TargetType="{x:Type ToggleButton}">
+<Border Background="Transparent"><Path Data="M 0 0 L 4 4 L 8 0 Z" Fill="{DynamicResource TextoSuave}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"/></Border>
+</ControlTemplate></ToggleButton.Template>
+</ToggleButton>
+<ContentPresenter x:Name="TextoSeleccion" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Margin="7,0,2,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+<Popup x:Name="PART_Popup" Grid.ColumnSpan="2" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False">
+<Border Background="{DynamicResource FondoPanel}" BorderBrush="{DynamicResource BordeControl}" BorderThickness="1" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+<ScrollViewer MaxHeight="260" CanContentScroll="True"><ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/></ScrollViewer>
+</Border>
+</Popup>
+</Grid>
+<ControlTemplate.Triggers>
+<Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="MarcoCombo" Property="BorderBrush" Value="{DynamicResource Resaltado}"/></Trigger>
+<Trigger Property="IsEnabled" Value="False"><Setter Property="Foreground" Value="{DynamicResource Deshabilitado}"/><Setter Property="Opacity" Value="0.6"/></Trigger>
+</ControlTemplate.Triggers>
+</ControlTemplate>
+</Setter.Value></Setter><Setter Property="ToolTipService.ShowOnDisabled" Value="True"/><Setter Property="ToolTipService.InitialShowDelay" Value="400"/><Setter Property="ToolTipService.ShowDuration" Value="30000"/><Setter Property="Height" Value="32"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="FontSize" Value="12.5"/>
+</Style>
+
+<Style TargetType="{x:Type ComboBoxItem}"><Setter Property="Foreground" Value="{DynamicResource Texto}"/><Setter Property="Padding" Value="7,5"/><Setter Property="Template"><Setter.Value>
+<ControlTemplate TargetType="{x:Type ComboBoxItem}"><Border x:Name="Fila" Background="{DynamicResource FondoPanel}" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border>
+<ControlTemplate.Triggers>
+<Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Fila" Property="Background" Value="{DynamicResource Acento}"/><Setter Property="Foreground" Value="White"/></Trigger>
+<Trigger Property="IsSelected" Value="True"><Setter TargetName="Fila" Property="Background" Value="{DynamicResource Acento}"/><Setter Property="Foreground" Value="White"/></Trigger>
+</ControlTemplate.Triggers>
+</ControlTemplate>
+</Setter.Value></Setter>
+</Style>
+
+<Style TargetType="{x:Type CheckBox}"><Setter Property="Foreground" Value="{DynamicResource Texto}"/><Setter Property="ToolTipService.ShowOnDisabled" Value="True"/><Setter Property="ToolTipService.InitialShowDelay" Value="400"/><Setter Property="ToolTipService.ShowDuration" Value="30000"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="MinHeight" Value="26"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type CheckBox}">
+<BulletDecorator Background="Transparent"><BulletDecorator.Bullet>
+<Grid Width="18" Height="18" VerticalAlignment="Center">
+<Border x:Name="Casilla" Background="{DynamicResource FondoControl}" BorderBrush="{DynamicResource BordeControl}" BorderThickness="1" CornerRadius="4"/>
+<Path x:Name="Marca" Data="M 4 8 L 7.5 12 L 14 5" Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Visibility="Collapsed"/>
+</Grid></BulletDecorator.Bullet>
+<ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+</BulletDecorator>
+<ControlTemplate.Triggers>
+<Trigger Property="IsChecked" Value="True"><Setter TargetName="Casilla" Property="Background" Value="{DynamicResource Acento}"/><Setter TargetName="Casilla" Property="BorderBrush" Value="{DynamicResource Acento}"/><Setter TargetName="Marca" Property="Visibility" Value="Visible"/></Trigger>
+<Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Casilla" Property="BorderThickness" Value="2"/><Setter TargetName="Casilla" Property="BorderBrush" Value="{DynamicResource Acento}"/></Trigger>
+<Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
+</ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+</Style>
+
+<!-- Modo de corte: segmentos rellenos, como el selector Columna / Placa de COLUMNAS. -->
+<Style x:Key="Modo" TargetType="{x:Type RadioButton}"><Setter Property="GroupName" Value="ModoCorte"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Foreground" Value="{DynamicResource TextoAcento}"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="ToolTipService.InitialShowDelay" Value="400"/><Setter Property="ToolTipService.ShowDuration" Value="30000"/><Setter Property="Template"><Setter.Value>
+<ControlTemplate TargetType="{x:Type RadioButton}">
+<Border x:Name="Segmento" Background="Transparent" CornerRadius="6" Padding="12,8">
+<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+</Border>
+<ControlTemplate.Triggers>
+<Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Segmento" Property="Background" Value="{DynamicResource Hover}"/><Setter Property="Foreground" Value="White"/></Trigger>
+<Trigger Property="IsChecked" Value="True"><Setter TargetName="Segmento" Property="Background" Value="{DynamicResource Acento}"/><Setter Property="Foreground" Value="White"/></Trigger>
+</ControlTemplate.Triggers>
+</ControlTemplate>
+</Setter.Value></Setter>
+</Style>
+
+<Style TargetType="{x:Type Button}"><Setter Property="Foreground" Value="{DynamicResource Texto}"/><Setter Property="ToolTipService.ShowOnDisabled" Value="True"/><Setter Property="ToolTipService.InitialShowDelay" Value="400"/><Setter Property="ToolTipService.ShowDuration" Value="30000"/><Setter Property="Padding" Value="14,6"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Background" Value="{DynamicResource FondoPanel}"/><Setter Property="BorderBrush" Value="{DynamicResource Borde}"/><Setter Property="Template"><Setter.Value>
+<ControlTemplate TargetType="{x:Type Button}">
+<Border x:Name="Marco" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5" Padding="{TemplateBinding Padding}">
+<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+</Border>
+<ControlTemplate.Triggers>
+<Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Marco" Property="Opacity" Value="0.86"/></Trigger>
+<Trigger Property="IsPressed" Value="True"><Setter TargetName="Marco" Property="Opacity" Value="0.72"/></Trigger>
+<Trigger Property="IsEnabled" Value="False"><Setter TargetName="Marco" Property="Opacity" Value="0.45"/></Trigger>
+</ControlTemplate.Triggers>
+</ControlTemplate>
+</Setter.Value></Setter><Setter Property="MinHeight" Value="32"/><Setter Property="FontWeight" Value="SemiBold"/>
+</Style>
+
+<Style TargetType="{x:Type ToolTip}"><Setter Property="Foreground" Value="{DynamicResource Texto}"/><Setter Property="Background" Value="{DynamicResource FondoPanel}"/><Setter Property="BorderBrush" Value="{DynamicResource BordeControl}"/><Setter Property="MaxWidth" Value="420"/><Setter Property="Padding" Value="14,10"/><Setter Property="ContentTemplate"><Setter.Value>
+<DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" LineHeight="19"/></DataTemplate>
+</Setter.Value></Setter><Setter Property="FontFamily" Value="{DynamicResource FuenteInterfaz}"/><Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="Normal"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Placement" Value="Bottom"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type ToolTip}">
+<Border Background="{TemplateBinding Background}" BorderBrush="{DynamicResource Acento}" BorderThickness="1" CornerRadius="8" Padding="{TemplateBinding Padding}">
+<ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"/>
+</Border></ControlTemplate></Setter.Value></Setter>
+</Style>
+
+<Style x:Key="Etiqueta" TargetType="{x:Type TextBlock}"><Setter Property="ToolTipService.ShowOnDisabled" Value="True"/><Setter Property="ToolTipService.InitialShowDelay" Value="400"/><Setter Property="ToolTipService.ShowDuration" Value="30000"/><Setter Property="VerticalAlignment" Value="Center"/><Setter Property="Margin" Value="0,0,8,0"/><Setter Property="Foreground" Value="{DynamicResource Texto}"/></Style>
+<Style x:Key="Subtitulo" TargetType="{x:Type TextBlock}"><Setter Property="FontSize" Value="12.5"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="{DynamicResource TextoAcento}"/><Setter Property="Margin" Value="0,0,0,10"/></Style>
+<Style x:Key="Nota" TargetType="{x:Type TextBlock}"><Setter Property="FontSize" Value="11.5"/><Setter Property="Foreground" Value="{DynamicResource TextoSuave}"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="LineHeight" Value="17"/></Style>
+<Style x:Key="Tarjeta" TargetType="{x:Type Border}"><Setter Property="Background" Value="{DynamicResource FondoTarjeta}"/><Setter Property="BorderBrush" Value="{DynamicResource Borde}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="7"/><Setter Property="Padding" Value="14,12"/><Setter Property="Margin" Value="0,0,0,10"/></Style>
+</Window.Resources>
+
+<DockPanel>
+<!-- Encabezado, como el de COLUMNAS -->
+<Border DockPanel.Dock="Top" Background="{DynamicResource FondoPanel}" BorderBrush="{DynamicResource Borde}" BorderThickness="0,0,0,1" Padding="16,8">
+<Grid>
+<Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<StackPanel Grid.Column="0" VerticalAlignment="Center">
+<TextBlock Text="DENOVA" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextoSuave}"/>
+<TextBlock Text="Cortar muros por altura" FontSize="21" FontWeight="ExtraBold" Foreground="{DynamicResource Texto}"/>
+</StackPanel>
+<TextBlock x:Name="TxtElementos" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" TextTrimming="CharacterEllipsis" MaxWidth="560"/>
+</Grid>
+</Border>
+
+<!-- Pie: resumen, tema y acciones -->
+<Border DockPanel.Dock="Bottom" Background="{DynamicResource FondoPanel}" BorderBrush="{DynamicResource Borde}" BorderThickness="0,1,0,0" Padding="16,10">
+<Grid>
+<Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+<TextBlock x:Name="TxtResumen" Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource TextoAcento}" TextWrapping="Wrap"/>
+<StackPanel Grid.Column="1" Orientation="Horizontal">
+<TextBlock Text="Tema" Style="{StaticResource Etiqueta}" ToolTip="Apariencia clara u oscura. Se recuerda al volver a abrir."/>
+<ComboBox x:Name="CmbTema" Width="94" Margin="0,0,16,0" VerticalAlignment="Center" SelectedIndex="0" ToolTip="Apariencia clara u oscura. Se recuerda al volver a abrir.">
+<ComboBoxItem Content="Claro"/><ComboBoxItem Content="Oscuro"/>
+</ComboBox>
+<Button x:Name="BtnCancelar" Content="Cancelar" Width="110" Height="38" Margin="4,0"/>
+<Button x:Name="BtnCortar" Content="Cortar muros" Width="180" Height="38" Margin="4,0,0,0" Background="{DynamicResource Acento}" Foreground="White" BorderBrush="{DynamicResource Acento}" ToolTip="Parte los muros en los tramos de la vista previa. Todo queda en un solo Deshacer (Ctrl+Z)."/>
+</StackPanel>
+</Grid>
+</Border>
+
+<Grid Margin="16,12,16,6">
+<Grid.ColumnDefinitions><ColumnDefinition Width="400"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+
+<!-- Opciones -->
+<ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+<StackPanel>
+<Border Style="{StaticResource Tarjeta}">
+<StackPanel>
+<TextBlock Text="Altura de corte" Style="{StaticResource Subtitulo}"/>
+<Border Background="{DynamicResource FondoControl}" BorderBrush="{DynamicResource Borde}" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,0,12">
+<UniformGrid Columns="3">
+<RadioButton x:Name="RbUna" Style="{StaticResource Modo}" Content="Una altura" Margin="0,0,3,0" ToolTip="Un solo corte: cada muro queda en dos tramos, inferior y superior."/>
+<RadioButton x:Name="RbVarias" Style="{StaticResource Modo}" Content="Varias" Margin="0,0,3,0" ToolTip="Varios cortes a la vez: cada muro queda en tantos tramos como cortes más uno."/>
+<RadioButton x:Name="RbAlzadas" Style="{StaticResource Modo}" Content="Alzadas" ToolTip="Cortes cada cierta altura desde la base hasta el tope: las alzadas de asentado de cada jornada (1.30 m según la E.070, 1.50 m en obra)."/>
+</UniformGrid>
+</Border>
+<Grid x:Name="FilaAltura" Margin="0,0,0,8">
+<Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<TextBlock Text="Altura de corte (m)" Style="{StaticResource Etiqueta}" ToolTip="Altura del corte, en metros. Acepta punto o coma decimal: 1.50 o 1,50."/>
+<TextBox x:Name="TxtAltura" Grid.Column="1" ToolTip="Altura del corte, en metros. Acepta punto o coma decimal: 1.50 o 1,50."/>
+</Grid>
+<Grid x:Name="FilaAlturas" Margin="0,0,0,8">
+<Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<TextBlock Text="Alturas de corte (m)" Style="{StaticResource Etiqueta}" ToolTip="Varias alturas separadas con punto y coma o espacios (la coma es decimal): 1.20; 2.40"/>
+<TextBox x:Name="TxtAlturas" Grid.Column="1" ToolTip="Varias alturas separadas con punto y coma o espacios (la coma es decimal): 1.20; 2.40"/>
+</Grid>
+<Grid x:Name="FilaAlzada" Margin="0,0,0,8">
+<Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<TextBlock Text="Altura de cada alzada (m)" Style="{StaticResource Etiqueta}" ToolTip="Se corta cada esta altura, siempre desde la base del muro, hasta llegar al tope. El último tramo es lo que sobra."/>
+<TextBox x:Name="TxtAlzada" Grid.Column="1" ToolTip="Se corta cada esta altura, siempre desde la base del muro, hasta llegar al tope. El último tramo es lo que sobra."/>
+</Grid>
+<Grid x:Name="FilaReferencia" Margin="0,0,0,8">
+<Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<TextBlock Text="Medir desde" Style="{StaticResource Etiqueta}" ToolTip="Base del muro: la altura se cuenta desde la base de cada muro. Nivel de base: desde su nivel (descuenta el desfase de base)."/>
+<ComboBox x:Name="CmbReferencia" Grid.Column="1" SelectedIndex="0" ToolTip="Base del muro: la altura se cuenta desde la base de cada muro. Nivel de base: desde su nivel (descuenta el desfase de base).">
+<ComboBoxItem Content="Base del muro"/><ComboBoxItem Content="Nivel de base"/>
+</ComboBox>
+</Grid>
+<Grid Margin="0,0,0,0">
+<Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<TextBlock Text="Tramo mínimo (cm)" Style="{StaticResource Etiqueta}" ToolTip="Un corte que deja un tramo más bajo que esto no se hace: evita tiras de muro cuando una altura cae casi en el tope o en la base."/>
+<TextBox x:Name="TxtMinimo" Grid.Column="1" ToolTip="Un corte que deja un tramo más bajo que esto no se hace: evita tiras de muro cuando una altura cae casi en el tope o en la base."/>
+</Grid>
+</StackPanel>
+</Border>
+
+<Border Style="{StaticResource Tarjeta}">
+<StackPanel>
+<TextBlock Text="Tramos" Style="{StaticResource Subtitulo}"/>
+<Grid Margin="0,0,0,8">
+<Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<TextBlock Text="El muro original queda" Style="{StaticResource Etiqueta}" ToolTip="El tramo que conserva el muro original: su Id, sus etiquetas y lo que tenga hospedado. Los demás tramos son copias con los mismos parámetros. Si un extremo está enlazado (Attach), lo conserva el original."/>
+<ComboBox x:Name="CmbOriginal" Grid.Column="1" SelectedIndex="0" ToolTip="El tramo que conserva el muro original: su Id, sus etiquetas y lo que tenga hospedado. Los demás tramos son copias con los mismos parámetros. Si un extremo está enlazado (Attach), lo conserva el original.">
+<ComboBoxItem Content="Como tramo inferior"/><ComboBoxItem Content="Como tramo superior"/>
+</ComboBox>
+</Grid>
+<CheckBox x:Name="ChkMarca" Content="Copiar también la Marca a los tramos nuevos" Margin="0,2" ToolTip="Revit avisa de marcas duplicadas; el aviso se acepta. Desmárcalo si cada tramo debe tener su propia Marca."/>
+<CheckBox x:Name="ChkHuecos" Content="Abrir huecos donde una puerta o ventana cruza el corte" Margin="0,2" ToolTip="Cada puerta o ventana queda en el tramo de su base. Si atraviesa el corte (una puerta de 2.10 m cortada a 1.50 m), en el tramo de arriba se abre un hueco del mismo ancho para que el muro no quede lleno. Solo en muros rectos."/>
+<CheckBox x:Name="ChkParamTramo" Content="Escribir el tramo en un parámetro" Margin="0,2" ToolTip="Anota en cada tramo su número desde abajo (A1, A2...) en el parámetro de texto que elijas: sirve para filtrar y para tablas de metrados por alzada."/>
+<Grid Margin="26,4,0,6">
+<Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="56"/></Grid.ColumnDefinitions>
+<ComboBox x:Name="CmbParamTramo" Grid.Column="0" ToolTip="Parámetros de texto de instancia que tienen todos los muros elegidos."/>
+<TextBlock Grid.Column="1" Text="Prefijo" Style="{StaticResource Etiqueta}" Margin="10,0,6,0"/>
+<TextBox x:Name="TxtPrefijo" Grid.Column="2" ToolTip="Texto antes del número: A da A1, A2..."/>
+</Grid>
+<CheckBox x:Name="ChkSeleccionar" Content="Seleccionar los tramos al terminar" Margin="0,2"/>
+</StackPanel>
+</Border>
+
+<TextBlock Style="{StaticResource Nota}" Margin="2,0,2,8" Text="Cada tramo conserva el tipo, el nivel de base y todos los parámetros de instancia del muro original (incorporados, de proyecto y compartidos). Al terminar se verifica parámetro por parámetro y se informa cualquier diferencia. Todo el corte se deshace con un solo Ctrl+Z."/>
+</StackPanel>
+</ScrollViewer>
+
+<!-- Vista previa y lista -->
+<Grid Grid.Column="2">
+<Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="250"/></Grid.RowDefinitions>
+<Border Grid.Row="0" Style="{StaticResource Tarjeta}">
+<DockPanel>
+<TextBlock DockPanel.Dock="Top" Text="Vista previa (elevación)" Style="{StaticResource Subtitulo}"/>
+<Border Background="{DynamicResource FondoLienzo}" BorderBrush="{DynamicResource Borde}" BorderThickness="1" CornerRadius="5" ClipToBounds="True">
+<Canvas x:Name="CanvasPrevia" ClipToBounds="True"/>
+</Border>
+</DockPanel>
+</Border>
+<Border Grid.Row="1" Style="{StaticResource Tarjeta}" Margin="0">
+<DockPanel>
+<TextBlock x:Name="TxtTituloLista" DockPanel.Dock="Top" Text="Muros" Style="{StaticResource Subtitulo}"/>
+<Grid x:Name="EncabezadoLista" DockPanel.Dock="Top" Margin="0,0,14,4"/>
+<ScrollViewer VerticalScrollBarVisibility="Auto">
+<StackPanel x:Name="PanelMuros"/>
+</ScrollViewer>
+</DockPanel>
+</Border>
+</Grid>
+</Grid>
+</DockPanel>
+</Window>
