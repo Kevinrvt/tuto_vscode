@@ -252,7 +252,7 @@
 </StackPanel>
 </Border>
 
-<TextBlock Style="{StaticResource Nota}" Margin="2,0,2,8" Text="Cada tramo conserva el tipo, el nivel de base y todos los parámetros de instancia del muro original (incorporados, de proyecto y compartidos). Al terminar se verifica parámetro por parámetro y se informa cualquier diferencia. Todo el corte se deshace con un solo Ctrl+Z."/>
+<TextBlock Style="{StaticResource Nota}" Margin="2,0,2,8" Text="Cada tramo conserva el tipo, el nivel de base y todos los parámetros de instancia del muro original (incorporados, de proyecto y compartidos). Al terminar se verifica parámetro por parámetro y se informa cualquier diferencia. Todo el corte se deshace con un solo Ctrl+Z. Cada ejecución guarda un diagnóstico (JSON) en la carpeta «diagnostico» de este botón; su ruta aparece en el informe final."/>
 </StackPanel>
 </ScrollViewer>
 

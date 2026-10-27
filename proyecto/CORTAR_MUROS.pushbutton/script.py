@@ -535,6 +535,21 @@ def _s(n):
     return u"" if n == 1 else u"s"
 
 
+def resumen_info(info):
+    """Lo que el diagnostico guarda de cada muro analizado (sin el elemento de Revit)."""
+    return dict((k, v) for k, v in info.items() if k != "elemento")
+
+
+def entorno(doc):
+    """Version de Revit y del documento, para el diagnostico."""
+    datos = {}
+    for clave, leer in (("revit", lambda: doc.Application.VersionNumber), ("build", lambda: doc.Application.VersionBuild),
+                        ("documento", lambda: doc.Title)):
+        try:datos[clave] = leer()
+        except Exception:pass
+    return datos
+
+
 def ejecutar(uidoc):
     doc = uidoc.Document
     if doc.IsFamilyDocument:
@@ -548,27 +563,47 @@ def ejecutar(uidoc):
         return
     if not muros:
         return
+    import traceback
+    import diagnostico as DG
     import revit_corte as RC
+    diag = DG.Diagnostico()
+    diag.poner("entorno", entorno(doc))
+
+    def avisar(texto, **k):
+        """El mensaje para el usuario, con la ruta del diagnostico al final (se guarda siempre que se corto algo o
+        hubo un error)."""
+        ruta = diag.guardar()
+        if ruta:
+            texto += u"\n\nDiagnóstico guardado en:\n{}".format(ruta)
+        forms.alert(texto, title=TITULO, **k)
+
     try:
         infos = [RC.analizar_muro(doc, m) for m in muros]
+        diag.poner("muros", [resumen_info(i) for i in infos])
         ventana = VentanaCorte(op.join(AQUI, "ui_cortar_muros.xaml"), infos)
         ventana.ShowDialog()
     except Exception as ex:
-        forms.alert(u"Error en la ventana:\n{}\n\nTipo: {}".format(ex, type(ex).__name__), title=TITULO)
+        diag.poner("error", {"donde": u"ventana", "texto": u"{}".format(ex), "traza": traceback.format_exc()})
+        avisar(u"Error en la ventana:\n{}\n\nTipo: {}".format(ex, type(ex).__name__))
         return
     if not ventana.proceder:
         return
+    diag.poner("opciones", ventana.resultado)
+    diag.poner("planes", LC.planificar(infos, ventana.resultado))
     try:
-        rep = RC.cortar_muros(doc, infos, ventana.resultado)
+        rep = RC.cortar_muros(doc, infos, ventana.resultado, diag)
     except Exception as ex:
-        forms.alert(u"No se cortó ningún muro (se deshizo todo):\n{}\n\nTipo: {}".format(ex, type(ex).__name__),
-                    title=TITULO)
+        diag.poner("error", {"donde": u"corte", "texto": u"{}".format(ex), "traza": traceback.format_exc()})
+        avisar(u"No se cortó ningún muro (se deshizo todo):\n{}\n\nTipo: {}".format(ex, type(ex).__name__))
         return
     if ventana.resultado.get("seleccionar") and rep["ids_resultado"]:
         try:uidoc.Selection.SetElementIds(List[DB.ElementId](rep["ids_resultado"]))
         except Exception:pass
+    diag.poner("reporte", dict((k, v) for k, v in rep.items() if k != "ids_resultado"))
+    texto = LC.texto_reporte(rep)
+    diag.poner("mensaje", texto)
     revisar = rep["fallidos"] or any(c.get("diferencias") or c.get("param_fallos") for c in rep["cortados"])
-    forms.alert(LC.texto_reporte(rep), title=TITULO, warn_icon=bool(revisar))
+    avisar(texto, warn_icon=bool(revisar))
 
 
 if __name__ == "__main__":

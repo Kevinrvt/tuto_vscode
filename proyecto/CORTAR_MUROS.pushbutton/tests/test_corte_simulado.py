@@ -40,8 +40,8 @@ def cargar_revit_corte():
 RC = cargar_revit_corte()
 
 
-def modelo(rechazar_partidos=False):
-    doc = R.Documento(rechazar_partidos)
+def modelo(rechazar_partidos=False, copia_sin_insertos=False):
+    doc = R.Documento(rechazar_partidos, copia_sin_insertos)
     doc.agregar(R.Level(1, 0.0, u"Nivel 1"))
     doc.agregar(R.Level(2, ft(2.60), u"Nivel 2"))
 
@@ -117,6 +117,20 @@ class CorteTests(unittest.TestCase):
         for c in rep["cortados"]:
             self.assertEqual(c["diferencias"], [])
         self.assertEqual(doc.GetElement(R.ElementId(copias[10])).valor(6), u"M-10")      # la Marca se copio
+
+    def test_copyelement_que_no_devuelve_las_puertas_copiadas(self):
+        # Lo que paso con la version 2.2 en Revit 2026: la copia de la puerta no estaba en lo que devolvio
+        # CopyElement, no se borro y Revit rechazo el muro ("no cortan nada"), tambien al reintentar.
+        doc, muros = modelo(copia_sin_insertos=True)
+        _, rep = cortar(doc, muros)
+        self.assertEqual(rep["fallidos"], [])
+        self.assertEqual(puertas_y_ventanas(doc), {11: 10, 21: 20})
+
+    def test_copyelement_sin_puertas_y_revit_que_rechaza_partidos(self):
+        doc, muros = modelo(rechazar_partidos=True, copia_sin_insertos=True)
+        _, rep = cortar(doc, muros)
+        self.assertEqual(rep["fallidos"], [])
+        self.assertEqual(len(puertas_y_ventanas(doc)), 2)
 
     def test_las_copias_sobrantes_se_borran_antes_de_cambiar_alturas(self):
         # Revit ve el modelo al regenerar: si al cambiar alturas aun hay dos ventanas iguales, las rechaza

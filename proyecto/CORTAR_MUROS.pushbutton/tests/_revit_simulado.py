@@ -7,6 +7,8 @@ journal de Revit 2026 al cortar muros con puertas y ventanas:
     unidos y Revit los trata como compartidos): por eso las copias quedaban sin borrar;
   * dos puertas o ventanas identicas en el mismo lugar, o una que no toca su muro, son un ERROR al confirmar
     ("Hay ejemplares de ... que no cortan nada") y la transaccion se deshace;
+  * con copia_sin_insertos=True, CopyElement copia las puertas y ventanas pero devuelve solo el muro (lo que explica
+    que la version 2.2 tampoco las encontrara);
   * con rechazar_partidos=True tambien es error una puerta o ventana que su muro cubre solo en parte (por si Revit
     lo rechaza en algun caso: el corte debe reintentarse moviendo el corte).
 
@@ -193,7 +195,9 @@ class _Copiador(object):
                                    e.Category.Id.Value, e._tipo)
             else:
                 c = Opening(doc.nuevo_id(), copia, e.BoundaryRect[0], e.BoundaryRect[1])
-            ids.append(doc.agregar(c).Id)
+            doc.agregar(c)
+            if not doc.copia_sin_insertos:
+                ids.append(c.Id)
         return ids
 
 
@@ -201,9 +205,10 @@ ElementTransformUtils = _Copiador
 
 
 class Documento(object):
-    def __init__(self, rechazar_partidos=False):
+    def __init__(self, rechazar_partidos=False, copia_sin_insertos=False):
         global DOC
         DOC = self
+        self.copia_sin_insertos = copia_sin_insertos
         self.els, self._id, self.registro, self.modificados = {}, 1000, [], set()
         self.rechazar_partidos = rechazar_partidos
         self.Create = self
@@ -309,6 +314,11 @@ class TransactionGroup(object):
     def Start(self):pass
     def Assimilate(self):return TransactionStatus.Committed
     def RollBack(self):pass
+
+
+class FilteredElementCollector(object):
+    def __init__(self, doc):self.doc = doc
+    def OfClass(self, clase):return [e for e in list(self.doc.els.values()) if isinstance(e, clase)]
 
 
 class Lista(list):

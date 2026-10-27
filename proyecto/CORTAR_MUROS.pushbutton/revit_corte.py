@@ -25,6 +25,7 @@ import Autodesk.Revit.DB as DB
 from System.Collections.Generic import List
 
 import logica_corte as LC
+import diagnostico as DG
 
 PIE = 0.3048
 TITULO_DESHACER = u"DENOVA - Cortar muros"
@@ -292,17 +293,28 @@ def analizar_muro(doc, muro):
 
 # ---- corte -------------------------------------------------------------------------------------------------------
 class Preprocesador(DB.IFailuresPreprocessor):
-    """Acepta las advertencias de Revit (y las anota para el informe); ante un error, deshace la transaccion."""
+    """Acepta las advertencias de Revit (y las anota para el informe); ante un error, deshace la transaccion. Para el
+    diagnostico guarda tambien que elementos exactos senalo Revit en cada falla (en ese momento todavia existen)."""
 
-    def __init__(self):
+    def __init__(self, doc=None):
+        self.doc = doc
         self.avisos = []
         self.errores = []
+        self.detalle = []
+
+    def _elementos(self, f, metodo):
+        try:return [describir(self.doc, self.doc.GetElement(i)) for i in getattr(f, metodo)()]
+        except Exception:return []
 
     def PreprocessFailures(self, fa):
         error = False
         for f in list(fa.GetFailureMessages()):
             try:texto = f.GetDescriptionText()
             except Exception:texto = u"(sin descripción)"
+            if self.doc is not None:
+                self.detalle.append({"severidad": u"{}".format(f.GetSeverity()), "texto": texto,
+                                     "elementos": self._elementos(f, "GetFailingElementIds"),
+                                     "adicionales": self._elementos(f, "GetAdditionalElementIds")})
             if f.GetSeverity() == DB.FailureSeverity.Warning:
                 if texto not in self.avisos:self.avisos.append(texto)
                 fa.DeleteWarning(f)
@@ -502,7 +514,65 @@ def _borrar(doc, eids):
     return len(vistos)
 
 
-def cortar_muro(doc, info, plan, op):
+def rango_muro(doc, muro):
+    """(base, tope) absolutos del muro en pies, segun sus parametros de altura."""
+    base = _cota_nivel(doc, _param(muro, "WALL_BASE_CONSTRAINT").AsElementId())[0] + _doble(muro, "WALL_BASE_OFFSET", 0.0)
+    tope_id = _param(muro, "WALL_HEIGHT_TYPE").AsElementId()
+    if _valido(tope_id):
+        return base, _cota_nivel(doc, tope_id)[0] + _doble(muro, "WALL_TOP_OFFSET", 0.0)
+    return base, base + _doble(muro, "WALL_USER_HEIGHT_PARAM", 0.0)
+
+
+def describir(doc, e):
+    """Lo que el diagnostico necesita saber de un elemento (cotas en metros). Nunca lanza."""
+    if e is None:
+        return {"id": None, "existe": False}
+    d = {"id": _id_num(e.Id)}
+    for clave, leer in (("clase", lambda: type(e).__name__), ("categoria", lambda: e.Category.Name),
+                        ("tipo_id", lambda: _id_num(e.GetTypeId())), ("nombre", lambda: _nombre(e)),
+                        ("host", lambda: _id_num(e.Host.Id))):
+        try:d[clave] = leer()
+        except Exception:pass
+    try:
+        p = e.Location.Point
+        d["punto_m"] = [round(ft_a_m(p.X), 4), round(ft_a_m(p.Y), 4), round(ft_a_m(p.Z), 4)]
+    except Exception:
+        pass
+    for clave, nombre in (("antepecho_m", "INSTANCE_SILL_HEIGHT_PARAM"), ("dintel_m", "INSTANCE_HEAD_HEIGHT_PARAM")):
+        v = _doble(e, nombre)
+        if v is not None:d[clave] = round(ft_a_m(v), 4)
+    try:
+        caja = e.get_BoundingBox(None)
+        if caja is not None:d["caja_z_m"] = [round(ft_a_m(caja.Min.Z), 4), round(ft_a_m(caja.Max.Z), 4)]
+    except Exception:
+        pass
+    if isinstance(e, DB.Wall):
+        try:
+            lo, hi = rango_muro(doc, e)
+            d["rango_m"] = [round(ft_a_m(lo), 4), round(ft_a_m(hi), 4)]
+            d["tope_conectado"] = _valido(_param(e, "WALL_HEIGHT_TYPE").AsElementId())
+        except Exception:
+            pass
+    return d
+
+
+def _hospedados(doc, ids_muros):
+    """{id de muro: [puertas, ventanas y huecos que lo tienen como anfitrion]}. Se buscan por su Host, recorriendo los
+    ejemplares del modelo: no depende de FindInserts (que con tramos apilados y unidos deja de devolver las copias) ni
+    de lo que devuelva CopyElement."""
+    res = dict((i, []) for i in ids_muros)
+    for clase in (DB.FamilyInstance, DB.Opening):
+        try:elementos = list(DB.FilteredElementCollector(doc).OfClass(clase))
+        except Exception:elementos = []
+        for e in elementos:
+            try:anfitrion = _id_num(e.Host.Id)
+            except Exception:continue
+            if anfitrion in res:
+                res[anfitrion].append(e)
+    return res
+
+
+def cortar_muro(doc, info, plan, op, diag=DG.NULO):
     """Parte el muro segun su plan, dentro de la transaccion abierta. Devuelve el resultado para el informe y la foto
     de parametros (para verificarla despues del Commit)."""
     muro = info["elemento"]
@@ -513,32 +583,20 @@ def cortar_muro(doc, info, plan, op):
            "insertos_sin_ubicar": 0, "huecos": 0, "huecos_fallidos": 0, "otros_borrados": {}, "embebidos": 0,
            "avisos": list(plan.get("avisos", []))}
     rangos = [(info["base_z"] + a, info["base_z"] + b) for a, b in tramos]
+    diag.paso("plan", muro=info["id"], tramos_m=plan["tramos"], original=k, cruce=op.get("cruce"))
 
-    # 1. Lo que hospeda el original se lee AHORA, antes de tocar nada: despues de cortar, Revit une los tramos
-    # apilados y FindInserts deja de devolver bien sus puertas y ventanas (las copias quedaban sin borrar, duplicadas,
-    # y Revit rechazaba el muro: "ejemplares idénticos en la misma ubicación", "ejemplares que no cortan nada").
-    originales = _insertos(doc, muro)
-    por_tramo, aberturas, otros = [[] for _ in range(n)], [[] for _ in range(n)], []
-    datos = {}
+    # 1. Lo que hospeda el original, AHORA, antes de tocar nada.
+    propios = _hospedados(doc, [info["id"]])[info["id"]]
+    ids_originales = set(_id_num(e.Id) for e in propios)
+    embebidos = [e for e in _insertos(doc, muro) if isinstance(e, DB.Wall)]
+    diag.paso("originales", muro=describir(doc, muro), hospedados=[describir(doc, e) for e in propios],
+              por_findinserts=[describir(doc, e) for e in _insertos(doc, muro)])
 
-    def registrar(i, e, es_copia):
-        d = _datos_inserto(doc, e)
-        if d is not None:
-            d["copia"] = es_copia
-            datos[d["id"]] = d
-            por_tramo[i].append(d)
-
-    # 2. copias (antes de cambiar nada del original) con la foto de parametros. Lo que Revit copio con cada una sale
-    # directamente de CopyElement: sus puertas y ventanas, sus huecos y lo demas (armaduras, muros embebidos...).
-    piezas = []
+    # 2. Copias (antes de cambiar nada del original) con la foto de parametros.
+    piezas, otros = [], []
     for i in range(n):
         if i == k:
             piezas.append(muro)
-            for e in originales:
-                if isinstance(e, DB.Opening):
-                    aberturas[i].append(e)
-                elif not isinstance(e, DB.Wall):
-                    registrar(i, e, False)
             continue
         copia, resto = _copiar_muro(doc, muro)
         copiados, fallos = escribir_parametros(copia, foto)
@@ -546,27 +604,42 @@ def cortar_muro(doc, info, plan, op):
         for f in fallos:
             if f not in res["param_fallos"]:res["param_fallos"].append(f)
         piezas.append(copia)
+        diag.paso("copia", tramo=i, copia=_id_num(copia.Id),
+                  devuelto_por_copyelement=[describir(doc, doc.GetElement(x)) for x in resto])
         for eid in resto:
             e = doc.GetElement(eid)
-            if e is None:
-                continue
-            if isinstance(e, DB.Opening):
-                aberturas[i].append(e)
-            elif isinstance(e, DB.FamilyInstance):
-                registrar(i, e, True)
-            else:
-                # un muro cortina embebido o armaduras hospedadas quedarian duplicados: el original sigue en su lugar
+            # un muro cortina embebido o armaduras hospedadas quedarian duplicados: el original sigue en su lugar
+            if e is not None and not isinstance(e, (DB.FamilyInstance, DB.Opening)):
                 if not isinstance(e, DB.Wall):
                     cat = _nombre(e.Category, u"otros") if e.Category is not None else u"otros"
                     res["otros_borrados"][cat] = res["otros_borrados"].get(cat, 0) + 1
                 otros.append(eid)
+    doc.Regenerate()              # las alturas aun no cambiaron: el modelo esta igual que antes, con las copias encima
 
-    # 3. Cada puerta o ventana queda en el tramo de su base y se borran sus copias sobrantes ANTES de cambiar las
-    # alturas: asi Revit nunca ve dos puertas iguales en el mismo lugar ni una puerta fuera de su muro.
+    # 3. Puertas y ventanas de cada tramo, por su anfitrion. Cada una queda en el tramo de su base; sus copias
+    # sobrantes se borran ANTES de cambiar las alturas.
+    ids_piezas = [_id_num(p.Id) for p in piezas]
+    hospedados = _hospedados(doc, ids_piezas)
+    por_tramo, aberturas, datos = [[] for _ in range(n)], [[] for _ in range(n)], {}
+    for i, pid in enumerate(ids_piezas):
+        for e in hospedados[pid]:
+            if isinstance(e, DB.Opening):
+                aberturas[i].append(e)
+                continue
+            d = _datos_inserto(doc, e)
+            if d is not None:
+                d["copia"] = d["id"] not in ids_originales
+                datos[d["id"]] = d
+                por_tramo[i].append(d)
+    diag.paso("hospedados_tras_copiar", rangos_m=[(ft_a_m(a), ft_a_m(b)) for a, b in rangos],
+              por_tramo=[[{"id": d["id"], "copia": d["copia"], "clave": d["clave"], "z_m": (ft_a_m(d["z_inf"]),
+                                                                                           ft_a_m(d["z_sup"]))}
+                          for d in fam] for fam in por_tramo])
     conservar, borrar, sin_ubicar = LC.asignar_insertos(
         rangos, [[(d["id"], d["clave"], d["z_inf"], d["copia"]) for d in fam] for fam in por_tramo], TOL_FT)
     res["insertos_sin_ubicar"] = len(sin_ubicar)
     pedidos = LC.huecos_para_insertos(rangos, [(i, datos[i]["z_inf"], datos[i]["z_sup"]) for i in conservar], TOL_FT)
+    diag.paso("asignacion", conservar=conservar, borrar=borrar, sin_ubicar=sin_ubicar, huecos_pedidos=pedidos)
     res["insertos_borrados"] = _borrar(doc, [datos[i]["eid"] for i in borrar])
     _borrar(doc, otros)
 
@@ -574,6 +647,20 @@ def cortar_muro(doc, info, plan, op):
     for i, (a, b) in enumerate(tramos):
         ajustar_tramo(piezas[i], a, b, i == n - 1, info)
     doc.Regenerate()
+
+    # 5. Red de seguridad: si quedo hospedada en algun tramo una COPIA que no se decidio conservar (un duplicado que
+    # ningun paso anterior vio), se borra. Los originales nunca se borran aqui.
+    guardar = set(conservar) | set(sin_ubicar)
+    sobrantes = [e for pid in ids_piezas for e in _hospedados(doc, [pid])[pid]
+                 if isinstance(e, DB.FamilyInstance) and _id_num(e.Id) not in guardar
+                 and _id_num(e.Id) not in ids_originales]
+    if sobrantes:
+        diag.paso("red_de_seguridad", borrados=[describir(doc, e) for e in sobrantes])
+        res["insertos_borrados"] += _borrar(doc, [e.Id for e in sobrantes])
+        doc.Regenerate()
+    diag.paso("tras_alturas", tramos=[describir(doc, p) for p in piezas],
+              hospedados=dict((pid, [describir(doc, e) for e in lista])
+                              for pid, lista in _hospedados(doc, ids_piezas).items()))
 
     def abrir(i, punto, ancho, zlo, zhi):
         try:
@@ -633,13 +720,16 @@ def cortar_muro(doc, info, plan, op):
 
     res["piezas"] = [_id_num(p.Id) for p in piezas]
     res["_elementos"] = piezas
+    diag.paso("antes_de_confirmar", huecos=res["huecos"], huecos_fallidos=res["huecos_fallidos"],
+              hospedados=dict((pid, [describir(doc, e) for e in lista])
+                              for pid, lista in _hospedados(doc, ids_piezas).items()))
     return res, foto
 
 
-def _cortar_en_transaccion(doc, info, plan, op):
+def _cortar_en_transaccion(doc, info, plan, op, diag=DG.NULO):
     """(res, foto, avisos) si Revit confirmo el corte de este muro; si no, lanza con el motivo. La transaccion es solo
     de este muro: si falla, el muro queda como estaba."""
-    pre = Preprocesador()
+    pre = Preprocesador(doc)
     tr = DB.Transaction(doc, u"{} · Id {}".format(TITULO_DESHACER, info["id"]))
     opciones = tr.GetFailureHandlingOptions()
     opciones.SetFailuresPreprocessor(pre)
@@ -647,18 +737,21 @@ def _cortar_en_transaccion(doc, info, plan, op):
     tr.SetFailureHandlingOptions(opciones)
     tr.Start()
     try:
-        res, foto = cortar_muro(doc, info, plan, op)
+        res, foto = cortar_muro(doc, info, plan, op, diag)
         estado = tr.Commit()
-    except Exception:
+    except Exception as ex:
+        diag.paso("excepcion", muro=info["id"], error=u"{}".format(ex), tipo=type(ex).__name__)
         if tr.GetStatus() == DB.TransactionStatus.Started:
             tr.RollBack()
         raise
+    diag.paso("confirmar", muro=info["id"], estado=u"{}".format(estado), avisos=pre.avisos, errores=pre.errores,
+              fallas=pre.detalle)
     if estado != DB.TransactionStatus.Committed:
         raise Exception(u"; ".join(pre.errores) or u"Revit no confirmó el cambio")
     return res, foto, pre.avisos
 
 
-def cortar_muros(doc, infos, op):
+def cortar_muros(doc, infos, op, diag=DG.NULO):
     """Corta todos los muros (una transaccion por muro dentro de un grupo: un solo Deshacer) y devuelve el reporte
     para logica_corte.texto_reporte, con los Id de los tramos en 'ids_resultado'.
 
@@ -682,8 +775,9 @@ def cortar_muros(doc, infos, op):
                     intentos.append((plan_mover, op_mover))
             hecho, motivo = None, None
             for j, (plan_j, op_j) in enumerate(intentos):
+                diag.paso("intento", muro=info["id"], numero=j + 1, cruce=op_j.get("cruce"), tramos_m=plan_j["tramos"])
                 try:
-                    hecho = _cortar_en_transaccion(doc, info, plan_j, op_j)
+                    hecho = _cortar_en_transaccion(doc, info, plan_j, op_j, diag)
                 except Exception as ex:
                     motivo = u"{}".format(ex)
                     continue
