@@ -117,21 +117,38 @@ class InsertosTests(unittest.TestCase):
 
     def test_cada_inserto_queda_en_el_tramo_de_su_base(self):
         # puerta (base 0.0) y ventana (antepecho 1.6): el original es el tramo 0 y la copia el 1, ambos con los dos
-        por_tramo = [[(10, "puerta", 0.0), (11, "ventana", 1.6)], [(20, "puerta", 0.0), (21, "ventana", 1.6)]]
+        por_tramo = [[(10, "puerta", 0.0, False), (11, "ventana", 1.6, False)],
+                     [(20, "puerta", 0.0, True), (21, "ventana", 1.6, True)]]
         conservar, borrar, sin_ubicar = LC.asignar_insertos(self.RANGOS, por_tramo, 1e-3)
         self.assertEqual(sorted(conservar), [10, 21])
         self.assertEqual(sorted(borrar), [11, 20])
         self.assertEqual(sin_ubicar, [])
 
+    def test_ventana_repetida_en_dos_tramos_no_se_borra(self):
+        # El caso real en Revit: los dos tramos quedan unidos y la MISMA ventana original (11) aparecia en los dos.
+        # Antes se tomaba la segunda aparicion como copia sobrante y se borraba la ventana conservada.
+        por_tramo = [[(11, "ventana", 1.0, False)], [(21, "ventana", 1.0, True), (11, "ventana", 1.0, False)]]
+        conservar, borrar, _ = LC.asignar_insertos(self.RANGOS, por_tramo, 1e-3)
+        self.assertEqual(conservar, [11])
+        self.assertEqual(borrar, [21])
+
+    def test_el_original_solo_se_borra_si_su_copia_lo_reemplaza(self):
+        # original arriba (tramo 1); la puerta (base 0.0) debe quedar en la copia de abajo
+        por_tramo = [[(20, "puerta", 0.0, True)], [(10, "puerta", 0.0, False)]]
+        self.assertEqual(LC.asignar_insertos(self.RANGOS, por_tramo, 1e-3)[:2], ([20], [10]))
+        # dos originales distintos en tramos distintos nunca se borran entre si
+        por_tramo = [[(10, "puerta", 0.0, False)], [(11, "puerta", 0.0, False)]]
+        self.assertEqual(LC.asignar_insertos(self.RANGOS, por_tramo, 1e-3)[1], [])
+
+    def test_sin_ejemplar_en_su_tramo_no_se_borra_nada(self):
+        # Revit no copio la ventana a la copia (tramo 1): la del original (tramo 0) no se borra
+        conservar, borrar, sin_ubicar = LC.asignar_insertos(self.RANGOS, [[(11, "ventana", 1.6, False)], []], 1e-3)
+        self.assertEqual((conservar, borrar, sin_ubicar), ([], [], [11]))
+
     def test_lo_que_esta_justo_en_el_corte_va_arriba(self):
         self.assertEqual(LC.tramo_de_cota(self.RANGOS, 1.5, 1e-3), 1)
         self.assertEqual(LC.tramo_de_cota(self.RANGOS, -0.2, 1e-3), 0)
         self.assertEqual(LC.tramo_de_cota(self.RANGOS, 9.0, 1e-3), 1)
-
-    def test_sin_ejemplar_en_su_tramo_no_se_borra_nada(self):
-        # Revit no copio la ventana a la copia (tramo 1): la del original (tramo 0) no se borra
-        conservar, borrar, sin_ubicar = LC.asignar_insertos(self.RANGOS, [[(11, "ventana", 1.6)], []], 1e-3)
-        self.assertEqual((conservar, borrar, sin_ubicar), ([], [], [11]))
 
     def test_hueco_donde_la_puerta_cruza_el_corte(self):
         pedidos = LC.huecos_para_insertos(self.RANGOS, [(10, 0.0, 2.1), (21, 1.6, 2.2)], 1e-3)
@@ -140,6 +157,54 @@ class InsertosTests(unittest.TestCase):
     def test_recortar(self):
         self.assertEqual(LC.recortar(1.0, 2.0, 1.5, 3.0, 1e-3), (1.5, 2.0))
         self.assertIsNone(LC.recortar(0.0, 1.0, 1.5, 3.0, 1e-3))
+
+
+class CruceTests(unittest.TestCase):
+    """Una ventana de 1.00 a 2.20 m y un corte a 1.50 m."""
+    VENTANA = {"tipo": u"ventana", "zi": 1.0, "zs": 2.2}
+    PUERTA = {"tipo": u"puerta", "zi": 0.0, "zs": 2.1}
+    HUECO = {"tipo": u"hueco", "zi": 1.0, "zs": 2.2}
+
+    def plan(self, cruce, insertos, altura=2.6, **k):
+        return LC.planificar([muro(altura, insertos=insertos, recto=True)], ops(cruce=cruce, **k))[0]
+
+    def test_hueco_corta_igual_y_avisa(self):
+        p = self.plan(LC.CRUCE_HUECO, [self.VENTANA])
+        self.assertEqual(p["tramos"], [(0.0, 1.5), (1.5, 2.6)])
+        self.assertEqual(len(p["cruces"]), 1)
+        self.assertTrue(any(u"se abre hueco" in a for a in p["avisos"]))
+
+    def test_ajustar_mueve_el_corte_al_borde_mas_cercano(self):
+        p = self.plan(LC.CRUCE_AJUSTAR, [self.VENTANA])
+        self.assertEqual(p["tramos"], [(0.0, 1.0), (1.0, 2.6)])
+        self.assertEqual(p["cruces"], [])
+        self.assertTrue(any(u"movido a 1.00" in a for a in p["avisos"]))
+        # puerta desde el piso: el antepecho (0.00) no sirve, el corte sube al dintel
+        self.assertEqual(self.plan(LC.CRUCE_AJUSTAR, [self.PUERTA])["tramos"], [(0.0, 2.1), (2.1, 2.6)])
+
+    def test_ajustar_con_insertos_encimados_usa_el_borde_del_conjunto(self):
+        otra = {"tipo": u"ventana", "zi": 2.0, "zs": 2.5}
+        self.assertEqual(LC.ajustar_cortes([1.5], LC.bloqueos({"insertos": [self.VENTANA, otra]}), 2.6, 0.05)[0],
+                         [1.0])
+        self.assertEqual(LC.ajustar_cortes([2.1], LC.bloqueos({"insertos": [self.VENTANA, otra]}), 2.6, 0.05)[0],
+                         [2.5])
+
+    def test_ajustar_sin_lugar_no_corta(self):
+        alta = {"tipo": u"puerta", "zi": 0.0, "zs": 2.58}
+        p = self.plan(LC.CRUCE_AJUSTAR, [alta])
+        self.assertIn(u"ningún corte", p["omitir"])
+
+    def test_omitir_no_corta_el_muro(self):
+        p = self.plan(LC.CRUCE_OMITIR, [self.VENTANA])
+        self.assertIn(u"partiría ventana", p["omitir"])
+        self.assertIsNone(self.plan(LC.CRUCE_OMITIR, [self.VENTANA], valores=[0.8])["omitir"])
+
+    def test_los_huecos_de_muro_no_bloquean(self):
+        self.assertEqual(self.plan(LC.CRUCE_OMITIR, [self.HUECO])["omitir"], None)
+
+    def test_estadisticas(self):
+        planes = LC.planificar([muro(2.6, insertos=[self.VENTANA], recto=True), muro(1.0)], ops())
+        self.assertEqual(LC.estadisticas(planes), {"muros": 2, "cortan": 1, "tramos": 2, "cruces": 1})
 
 
 class ReporteTests(unittest.TestCase):

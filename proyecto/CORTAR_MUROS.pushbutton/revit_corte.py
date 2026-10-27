@@ -10,9 +10,11 @@ Como se parte un muro (en una transaccion por muro, todas dentro de un Transacti
   3. Cada tramo queda con la MISMA restriccion de base (el mismo nivel: los metrados por piso no cambian) y un
      desfase de base mayor; los de abajo quedan con altura desconectada y el de arriba conserva la restriccion
      superior del original (su nivel y su desfase superior).
-  4. Puertas, ventanas y muros embebidos: copiar un muro copia sus insertos, asi que cada uno queda solo en el tramo
-     donde cae su borde inferior y se borran sus copias de los demas tramos. Donde un inserto cruza un corte, se abre
-     un hueco rectangular en el tramo que atraviesa (opcional). Los huecos de muro (Opening) se recortan a cada tramo.
+  4. Puertas y ventanas: copiar un muro copia sus insertos, asi que cada una queda solo en el tramo donde cae su
+     borde inferior y se borran sus copias de los demas tramos. Solo se borra lo que este corte copio (o un original
+     cuya copia lo reemplaza), nunca algo que se conserva. Donde un inserto cruza un corte, se abre un hueco
+     rectangular en el tramo que atraviesa. Los muros cortina embebidos no se tocan: se abre hueco en los tramos que
+     atraviesan. Los huecos de muro (Opening) se recortan a cada tramo.
   5. Al terminar, se verifica parametro por parametro que cada tramo tenga los valores de la foto.
 Las advertencias de Revit se aceptan y se informan; un error deshace solo ese muro, que queda como estaba."""
 from __future__ import division
@@ -249,7 +251,8 @@ def analizar_muro(doc, muro):
     """Lo que la ventana y el corte necesitan saber del muro (cotas en pies; altura y desfase tambien en metros)."""
     info = {"elemento": muro, "id": _id_num(muro.Id), "tipo": _nombre(muro), "nivel": u"", "omitir": None,
             "altura_m": 0.0, "base_offset_m": 0.0, "base_z": 0.0, "base_offset": 0.0, "tope_restringido": False,
-            "tope_enlazado": False, "base_enlazada": False, "recto": False, "textos": []}
+            "tope_enlazado": False, "base_enlazada": False, "recto": False, "textos": [], "largo_m": 0.0,
+            "insertos": []}
     info["omitir"] = motivo_omision(muro)
     if info["omitir"]:
         return info
@@ -277,6 +280,9 @@ def analizar_muro(doc, muro):
         info["base_offset_m"] = ft_a_m(info["base_offset"])
         info["recto"] = isinstance(muro.Location.Curve, DB.Line)
         info["textos"] = nombres_texto(muro)
+        curva = muro.Location.Curve
+        info["largo_m"] = ft_a_m(curva.Length)
+        info["insertos"] = leer_insertos(doc, muro, info["base_z"], curva)
     except Exception as ex:
         info["omitir"] = u"no se pudo leer su altura ({})".format(ex)
     return info
@@ -400,19 +406,98 @@ def _crear_hueco(doc, muro, punto, ancho, zlo, zhi):
 
 
 def _insertos(doc, muro):
-    try:ids = list(muro.FindInserts(True, False, True, True))
+    """Lo que el muro HOSPEDA: puertas, ventanas, huecos y muros embebidos. Sin los insertos 'compartidos' y solo los
+    que tienen a este muro como anfitrion: con dos tramos apilados y unidos, Revit devolvia la ventana de un tramo
+    tambien en el otro, y se borraba como si fuera una copia sobrante."""
+    try:ids = list(muro.FindInserts(True, False, True, False))
     except Exception:ids = []
-    return [e for e in (doc.GetElement(i) for i in ids) if e is not None]
+    propio, lista = _id_num(muro.Id), []
+    for i in ids:
+        e = doc.GetElement(i)
+        if e is None:
+            continue
+        anfitrion = getattr(e, "Host", None)
+        if anfitrion is not None and _id_num(anfitrion.Id) != propio:
+            continue
+        lista.append(e)
+    return lista
+
+
+def _s_en_curva(curva, punto):
+    """Distancia (pies) desde el inicio del muro hasta la proyeccion del punto sobre su linea."""
+    try:
+        r = curva.Project(punto)
+        return curva.ComputeNormalizedParameter(r.Parameter) * curva.Length
+    except Exception:
+        p0, p1 = curva.GetEndPoint(0), curva.GetEndPoint(1)
+        dx, dy = p1.X - p0.X, p1.Y - p0.Y
+        n = (dx * dx + dy * dy) ** 0.5 or 1.0
+        return ((punto.X - p0.X) * dx + (punto.Y - p0.Y) * dy) / n
+
+
+def _tipo_inserto(e):
+    if isinstance(e, DB.Opening):
+        return u"hueco"
+    if isinstance(e, DB.Wall):
+        try:return u"muro cortina" if e.WallType.Kind == DB.WallKind.Curtain else u"muro embebido"
+        except Exception:return u"muro embebido"
+    try:
+        cid = _id_num(e.Category.Id)
+        if cid == int(DB.BuiltInCategory.OST_Doors):return u"puerta"
+        if cid == int(DB.BuiltInCategory.OST_Windows):return u"ventana"
+    except Exception:
+        pass
+    return u"inserto"
+
+
+def leer_insertos(doc, muro, base_z, curva):
+    """Lo que hospeda el muro, para la vista previa y para decidir los cortes: tipo, cotas en metros sobre la base
+    (zi, zs), tramo a lo largo del muro en metros (s0, s1) y lo que hace falta para abrir huecos (en pies)."""
+    lista = []
+    for e in _insertos(doc, muro):
+        tipo = _tipo_inserto(e)
+        try:
+            if tipo == u"hueco":
+                if not e.IsRectBoundary:
+                    continue
+                r = list(e.BoundaryRect)
+                zi, zs = min(r[0].Z, r[1].Z), max(r[0].Z, r[1].Z)
+                sa, sb = _s_en_curva(curva, r[0]), _s_en_curva(curva, r[1])
+                punto, ancho = None, abs(sb - sa)
+            elif tipo in (u"muro cortina", u"muro embebido"):
+                caja, c = e.get_BoundingBox(None), e.Location.Curve
+                sa, sb = _s_en_curva(curva, c.GetEndPoint(0)), _s_en_curva(curva, c.GetEndPoint(1))
+                zi, zs = caja.Min.Z, caja.Max.Z
+                punto, ancho = c.Evaluate(0.5, True), abs(sb - sa)
+            else:
+                d = _datos_inserto(doc, e)
+                if d is None:
+                    continue
+                zi, zs, punto, ancho = d["z_inf"], d["z_sup"], d["punto"], d["ancho"]
+                if not ancho and isinstance(curva, DB.Line):
+                    ancho = _ancho_caja(d["caja"], DB.XYZ(curva.Direction.X, curva.Direction.Y, 0).Normalize())
+                centro = _s_en_curva(curva, punto)
+                sa, sb = centro - (ancho or 0.0) / 2.0, centro + (ancho or 0.0) / 2.0
+        except Exception:
+            continue
+        lista.append({"id": _id_num(e.Id), "tipo": tipo, "nombre": _nombre(e),
+                      "zi": ft_a_m(zi - base_z), "zs": ft_a_m(zs - base_z),
+                      "s0": ft_a_m(min(sa, sb)), "s1": ft_a_m(max(sa, sb)),
+                      "zi_ft": zi, "zs_ft": zs, "punto": punto, "ancho_ft": ancho})
+    return lista
 
 
 def _borrar(doc, eids):
-    if not eids:
-        return 0
-    lista = List[DB.ElementId]()
+    vistos, lista = set(), List[DB.ElementId]()
     for eid in eids:
+        if _id_num(eid) in vistos:
+            continue
+        vistos.add(_id_num(eid))
         lista.Add(eid)
+    if not vistos:
+        return 0
     doc.Delete(lista)
-    return len(eids)
+    return len(vistos)
 
 
 def cortar_muro(doc, info, plan, op):
@@ -423,11 +508,11 @@ def cortar_muro(doc, info, plan, op):
     n, k = len(tramos), plan["original"]
     foto = leer_parametros(muro, excluidos(op.get("copiar_marca", True)))
     res = {"id": info["id"], "piezas": [], "param_copiados": 0, "param_fallos": [], "insertos_borrados": 0,
-           "insertos_sin_ubicar": 0, "huecos": 0, "huecos_fallidos": 0, "otros_borrados": {},
+           "insertos_sin_ubicar": 0, "huecos": 0, "huecos_fallidos": 0, "otros_borrados": {}, "embebidos": 0,
            "avisos": list(plan.get("avisos", []))}
 
     # 1. copias (antes de cambiar nada del original) con la foto de parametros
-    piezas, restos = [], []
+    piezas, restos, copiados_ids = [], [], set()      # copiados_ids: todo lo que ESTE corte creo al copiar
     for i in range(n):
         if i == k:
             piezas.append(muro)
@@ -439,6 +524,8 @@ def cortar_muro(doc, info, plan, op):
             if f not in res["param_fallos"]:res["param_fallos"].append(f)
         piezas.append(copia)
         restos.extend(resto)
+        copiados_ids.add(_id_num(copia.Id))
+        copiados_ids.update(_id_num(x) for x in resto)
 
     # 2. altura de cada tramo
     for i, (a, b) in enumerate(tramos):
@@ -447,53 +534,74 @@ def cortar_muro(doc, info, plan, op):
     rangos = [(info["base_z"] + a, info["base_z"] + b) for a, b in tramos]
 
     # 3. insertos: cada uno en el tramo de su base; los huecos de muro, recortados a cada tramo
-    por_tramo, aberturas, conocidos = [], [], set()
+    por_tramo, aberturas, conocidos, embebidos_copiados = [], [], set(), []
     for pieza in piezas:
         fam, abert = [], []
         for e in _insertos(doc, pieza):
-            conocidos.add(_id_num(e.Id))
+            iid = _id_num(e.Id)
+            if iid in conocidos:
+                continue
+            conocidos.add(iid)
             if isinstance(e, DB.Opening):
                 abert.append(e)
+            elif isinstance(e, DB.Wall):
+                if iid in copiados_ids:embebidos_copiados.append(e.Id)
             else:
                 d = _datos_inserto(doc, e)
-                if d is not None:fam.append(d)
+                if d is not None:
+                    d["copia"] = iid in copiados_ids
+                    fam.append(d)
         por_tramo.append(fam)
         aberturas.append(abert)
     datos = dict((d["id"], d) for fam in por_tramo for d in fam)
     conservar, borrar, sin_ubicar = LC.asignar_insertos(
-        rangos, [[(d["id"], d["clave"], d["z_inf"]) for d in fam] for fam in por_tramo], TOL_FT)
+        rangos, [[(d["id"], d["clave"], d["z_inf"], d["copia"]) for d in fam] for fam in por_tramo], TOL_FT)
     res["insertos_sin_ubicar"] = len(sin_ubicar)
-    pedidos = LC.huecos_para_insertos(rangos, [(i, datos[i]["z_inf"], datos[i]["z_sup"]) for i in conservar], TOL_FT) \
-        if op.get("huecos", True) else []
+    pedidos = LC.huecos_para_insertos(rangos, [(i, datos[i]["z_inf"], datos[i]["z_sup"]) for i in conservar], TOL_FT)
     res["insertos_borrados"] = _borrar(doc, [datos[i]["eid"] for i in borrar])
 
-    # Lo demas que Revit copio con el muro y no es un inserto (armaduras hospedadas, por ejemplo) quedaria duplicado:
-    # se borra de las copias; el original sigue en el muro original.
-    otros = []
+    # Lo demas que Revit copio con el muro (un muro cortina embebido, armaduras hospedadas...) quedaria duplicado: se
+    # borra de las copias; el original sigue intacto en su lugar. Solo se borra lo que este corte copio.
+    otros = list(embebidos_copiados)
     for eid in restos:
         e = doc.GetElement(eid)
         if e is None or _id_num(eid) in conocidos:
+            continue
+        if isinstance(e, DB.Wall):
+            otros.append(eid)
             continue
         cat = _nombre(e.Category, u"otros") if e.Category is not None else u"otros"
         res["otros_borrados"][cat] = res["otros_borrados"].get(cat, 0) + 1
         otros.append(eid)
     _borrar(doc, otros)
 
+    def abrir(i, punto, ancho, zlo, zhi):
+        try:
+            if punto is not None and info["recto"] and _crear_hueco(doc, piezas[i], punto, ancho, zlo, zhi) is not None:
+                res["huecos"] += 1
+                return
+        except Exception:
+            pass
+        res["huecos_fallidos"] += 1
+
     for i, iid, zlo, zhi in pedidos:
         d = datos[iid]
         ancho = d["ancho"]
-        try:
-            if not ancho and info["recto"]:
-                c = piezas[i].Location.Curve
-                ancho = _ancho_caja(d["caja"], DB.XYZ(c.Direction.X, c.Direction.Y, 0).Normalize())
-            if _crear_hueco(doc, piezas[i], d["punto"], ancho, zlo, zhi) is None:
-                res["huecos_fallidos"] += 1
-            else:
-                res["huecos"] += 1
-        except Exception:
-            res["huecos_fallidos"] += 1
-    if pedidos and not info["recto"]:
-        res["avisos"].append(u"es curvo: los huecos donde las puertas o ventanas cruzan el corte hay que abrirlos a mano")
+        if not ancho and info["recto"]:
+            c = piezas[i].Location.Curve
+            ancho = _ancho_caja(d["caja"], DB.XYZ(c.Direction.X, c.Direction.Y, 0).Normalize())
+        abrir(i, d["punto"], ancho, zlo, zhi)
+
+    # Muros cortina embebidos: no se copian ni se mueven. Siguen embebidos en el tramo original; en los demas tramos
+    # que atraviesan se abre un hueco de su tamano.
+    for ins in info.get("insertos") or []:
+        if ins["tipo"] not in (u"muro cortina", u"muro embebido"):
+            continue
+        res["embebidos"] += 1
+        for i, (lo, hi) in enumerate(rangos):
+            parte = LC.recortar(ins["zi_ft"], ins["zs_ft"], lo, hi, TOL_FT)
+            if i != k and parte is not None:
+                abrir(i, ins["punto"], ins["ancho_ft"], parte[0], parte[1])
 
     for i, pieza in enumerate(piezas):
         lo, hi = rangos[i]

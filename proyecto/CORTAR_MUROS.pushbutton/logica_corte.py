@@ -11,7 +11,13 @@ Cada tramo es (a, b): desde a hasta b metros sobre la base del muro, con 0 <= a 
 modulo estan en METROS; revit_corte.py convierte a pies al tocar el modelo.
 
 Un corte que deja un tramo menor que el tramo minimo (por defecto 5 cm) no se hace: evita tiras de muro sin sentido
-cuando una altura cae justo en el tope o la base. Se informa como corte ignorado."""
+cuando una altura cae justo en el tope o la base. Se informa como corte ignorado.
+
+Puertas, ventanas y muros cortina embebidos solo abren el muro que los hospeda: si un corte los atraviesa, el otro
+tramo quedaria lleno delante de ellos. Que hacer en ese caso lo decide la politica de cruce:
+  hueco    cortar igual: el inserto queda entero en el tramo de su base y en el otro tramo se abre un hueco;
+  ajustar  mover ese corte al borde mas cercano del inserto (su antepecho o su dintel), para no partirlo;
+  omitir   no cortar ese muro."""
 from __future__ import division
 
 import re
@@ -20,6 +26,11 @@ MODO_UNA, MODO_VARIAS, MODO_ALZADAS = "una", "varias", "alzadas"
 MODOS = (MODO_UNA, MODO_VARIAS, MODO_ALZADAS)
 REF_BASE, REF_NIVEL = "base", "nivel"
 ORIGINAL_INFERIOR, ORIGINAL_SUPERIOR = "inferior", "superior"
+CRUCE_HUECO, CRUCE_AJUSTAR, CRUCE_OMITIR = "hueco", "ajustar", "omitir"
+CRUCES = (CRUCE_HUECO, CRUCE_AJUSTAR, CRUCE_OMITIR)
+# Lo que el corte no debe partir (los huecos de muro, Opening, si se pueden recortar a cada tramo).
+TIPOS_BLOQUEO = (u"puerta", u"ventana", u"muro cortina", u"muro embebido", u"inserto")
+TOL_M = 0.005
 MINIMO_CM_DEFECTO = 5.0
 # Una alzada de 1 cm en un muro de 3 m serian 300 copias: casi seguro un error de tipeo, no un pedido.
 MAX_TRAMOS = 40
@@ -70,6 +81,8 @@ def validar_opciones(op):
         return u"La alzada tiene que ser mayor que cero."
     if any(v <= 0 for v in valores) and op.get("referencia") != REF_NIVEL:
         return u"Las alturas se miden desde la base del muro: tienen que ser mayores que cero."
+    if op.get("cruce", CRUCE_HUECO) not in CRUCES:
+        return u"Elige qué hacer cuando una puerta o ventana cruza el corte."
     minimo = op.get("minimo_cm")
     if minimo is None or minimo < 0:
         return u"El tramo mínimo tiene que ser un número de centímetros (0 o más)."
@@ -113,6 +126,49 @@ def tramos(altura, cortes, minimo):
     return [(bordes[i], bordes[i + 1]) for i in range(len(bordes) - 1)], ignorados
 
 
+def bloqueos(info):
+    """[(z_inferior, z_superior, descripcion)] en metros sobre la base del muro de lo que el corte no debe partir."""
+    lista = []
+    for i in info.get("insertos") or []:
+        if i.get("tipo") in TIPOS_BLOQUEO:
+            lista.append((i["zi"], i["zs"], u"{} ({:.2f}–{:.2f} m)".format(i["tipo"], i["zi"], i["zs"])))
+    return lista
+
+
+def cruza(c, zi, zs):
+    """El corte a la altura c parte el intervalo [zi, zs] (tocar un borde no es partirlo)."""
+    return zi + TOL_M < c < zs - TOL_M
+
+
+def ajustar_cortes(cortes, bloq, altura, minimo):
+    """(cortes, avisos): cada corte que parte un inserto se mueve al borde mas cercano del inserto (antepecho o
+    dintel). Si hay insertos encimados, al borde del conjunto. Si ningun borde deja tramos de al menos 'minimo'
+    (una puerta que llega casi al tope, por ejemplo), ese corte no se hace."""
+    nuevos, avisos = [], []
+    for c in cortes:
+        dentro = [b for b in bloq if cruza(c, b[0], b[1])]
+        if not dentro:
+            nuevos.append(c)
+            continue
+        lo, hi = min(b[0] for b in dentro), max(b[1] for b in dentro)
+        crecio = True
+        while crecio:
+            crecio = False
+            for b in bloq:
+                if b[0] < hi - TOL_M and b[1] > lo + TOL_M and (b[0] < lo - EPS or b[1] > hi + EPS):
+                    lo, hi = min(lo, b[0]), max(hi, b[1])
+                    crecio = True
+        nombres = u", ".join(b[2] for b in dentro)
+        validos = [z for z in (lo, hi) if minimo - EPS <= z <= altura - minimo + EPS and EPS < z < altura - EPS]
+        if not validos:
+            avisos.append(u"el corte a {:.2f} m partía {} y no hay dónde moverlo: no se hace".format(c, nombres))
+            continue
+        z = min(validos, key=lambda v: abs(v - c))
+        nuevos.append(z)
+        avisos.append(u"corte de {:.2f} m movido a {:.2f} m para no partir {}".format(c, z, nombres))
+    return nuevos, avisos
+
+
 def pieza_original(n, preferencia, tope_enlazado=False, base_enlazada=False):
     """(indice, aviso): el tramo que conserva el muro ORIGINAL -- su Id, sus etiquetas, lo que tenga hospedado -- y un
     aviso si no pudo ser el pedido. Los demas tramos son copias.
@@ -138,7 +194,8 @@ def planificar(infos, op):
     minimo = (op.get("minimo_cm") or 0.0) / 100.0
     planes = []
     for info in infos:
-        plan = {"tramos": [], "ignorados": [], "original": None, "avisos": [], "omitir": info.get("omitir")}
+        plan = {"tramos": [], "ignorados": [], "original": None, "avisos": [], "cruces": [],
+                "omitir": info.get("omitir")}
         planes.append(plan)
         if plan["omitir"]:
             continue
@@ -146,10 +203,19 @@ def planificar(infos, op):
         if altura <= 2 * max(minimo, EPS):
             plan["omitir"] = u"es demasiado bajo para cortarlo ({:.2f} m)".format(altura)
             continue
-        plan["tramos"], plan["ignorados"] = tramos(altura, cortes_pedidos(op, altura, info.get("base_offset_m") or 0.0),
-                                                   minimo)
+        cortes = cortes_pedidos(op, altura, info.get("base_offset_m") or 0.0)
+        bloq = bloqueos(info)
+        politica = op.get("cruce", CRUCE_HUECO)
+        if politica == CRUCE_AJUSTAR and bloq:
+            cortes, avisos = ajustar_cortes(cortes, bloq, altura, minimo)
+            plan["avisos"].extend(avisos)
+        plan["tramos"], plan["ignorados"] = tramos(altura, cortes, minimo)
+        plan["cruces"] = [b[2] for b in bloq if any(cruza(a, b[0], b[1]) for a, _ in plan["tramos"][1:])]
         if len(plan["tramos"]) < 2:
             plan["omitir"] = u"ningún corte cae dentro del muro (altura {:.2f} m)".format(altura)
+            continue
+        if plan["cruces"] and politica == CRUCE_OMITIR:
+            plan["omitir"] = u"el corte partiría {}".format(u", ".join(plan["cruces"]))
             continue
         plan["original"], aviso = pieza_original(len(plan["tramos"]), op.get("original"),
                                                  info.get("tope_enlazado"), info.get("base_enlazada"))
@@ -158,6 +224,10 @@ def planificar(infos, op):
             continue
         if aviso:
             plan["avisos"].append(aviso)
+        if plan["cruces"]:
+            plan["avisos"].append(u"queda entero en el tramo de su base y se abre hueco en el otro: {}".format(
+                u", ".join(plan["cruces"])) if info.get("recto", True) else
+                u"es curvo: el hueco para {} hay que abrirlo a mano".format(u", ".join(plan["cruces"])))
         if plan["ignorados"]:
             plan["avisos"].append(u"cortes no hechos (fuera del muro o dejan un tramo menor que el mínimo): {}".format(
                 u", ".join(u"{:.2f} m".format(c) for c in plan["ignorados"])))
@@ -174,36 +244,42 @@ def tramo_de_cota(rangos, z, tol):
 
 
 def asignar_insertos(rangos, insertos_por_tramo, tol):
-    """Que puertas, ventanas y muros embebidos se quedan y cuales se borran.
+    """Que puertas y ventanas se quedan y cuales se borran despues de copiar el muro.
 
-    insertos_por_tramo: una lista por tramo con (id, clave, z_inferior) de los insertos hospedados en ese tramo. Copiar
-    un muro copia tambien sus insertos, asi que el mismo inserto (la misma clave: tipo y posicion) aparece en varios
-    tramos. Se conserva en el tramo donde cae su borde inferior y se borra de los demas. Si ese tramo no tiene su
-    ejemplar (Revit no lo copio), no se borra ninguno: mejor un duplicado a la vista que perder una puerta.
-    Devuelve (conservar, borrar, sin_ubicar), listas de ids."""
-    orden = []
-    por_clave = {}
+    insertos_por_tramo: una lista por tramo con (id, clave, z_inferior, es_copia) de los insertos HOSPEDADOS en ese
+    tramo. Copiar un muro copia sus insertos, asi que el mismo inserto (la misma clave: tipo y posicion) aparece en
+    varios tramos: se conserva en el tramo donde cae su borde inferior (el original si esta ahi, para no cambiarle el
+    Id) y los demas ejemplares se borran.
+    Reglas de seguridad: nunca se borra un id que se conserva (aunque aparezca en dos listas) y nunca se borra un
+    original salvo que su copia lo reemplace en el tramo correcto. Si el tramo de su base no tiene ningun ejemplar,
+    no se borra ninguno. Devuelve (conservar, borrar, sin_ubicar), listas de ids sin repetir."""
+    orden, por_clave = [], {}
     for i, lista in enumerate(insertos_por_tramo):
-        for iid, clave, z in lista:
+        for iid, clave, z, es_copia in lista:
             if clave not in por_clave:
                 por_clave[clave] = []
                 orden.append(clave)
-            por_clave[clave].append((i, iid, z))
+            if all(e[1] != iid for e in por_clave[clave]):
+                por_clave[clave].append((i, iid, z, es_copia))
     conservar, borrar, sin_ubicar = [], [], []
     for clave in orden:
         ejemplares = por_clave[clave]
         destino = tramo_de_cota(rangos, ejemplares[0][2], tol)
-        elegido = None
-        for e in ejemplares:
-            if e[0] == destino:
-                elegido = e
-                break
-        if elegido is None:
-            sin_ubicar.extend(e[1] for e in ejemplares)
+        en_destino = [e for e in ejemplares if e[0] == destino]
+        if not en_destino:
+            sin_ubicar.extend(e[1] for e in ejemplares if e[1] not in sin_ubicar)
             continue
+        originales = [e for e in en_destino if not e[3]]
+        elegido = originales[0] if originales else en_destino[0]
         conservar.append(elegido[1])
-        borrar.extend(e[1] for e in ejemplares if e is not elegido)
-    return conservar, borrar, sin_ubicar
+        borrar.extend(e[1] for e in ejemplares if e[1] != elegido[1] and (e[3] or elegido[3]))
+    guardados = set(conservar)
+    vistos, unicos = set(), []
+    for iid in borrar:
+        if iid not in guardados and iid not in vistos:
+            vistos.add(iid)
+            unicos.append(iid)
+    return conservar, unicos, sin_ubicar
 
 
 def recortar(zi, zs, lo, hi, tol):
@@ -238,6 +314,13 @@ def nombre_tramo(prefijo, indice):
 def texto_tramos(lista):
     """'0.00–1.50 · 1.50–2.60' para la lista de la ventana."""
     return u" · ".join(u"{:.2f}–{:.2f}".format(a, b) for a, b in lista)
+
+
+def estadisticas(planes):
+    """Los numeros del encabezado de la ventana."""
+    cortan = [p for p in planes if not p["omitir"]]
+    return {"muros": len(planes), "cortan": len(cortan), "tramos": sum(len(p["tramos"]) for p in cortan),
+            "cruces": sum(len(p.get("cruces") or []) for p in cortan)}
 
 
 def resumen_planes(planes):
@@ -285,6 +368,9 @@ def texto_reporte(rep):
             cosas.append(u"{} inserto(s) no se pudieron reubicar: quedaron duplicados".format(c["insertos_sin_ubicar"]))
         if c.get("huecos_fallidos"):
             cosas.append(u"{} hueco(s) no se pudieron abrir".format(c["huecos_fallidos"]))
+        if c.get("embebidos"):
+            cosas.append(u"{} muro(s) cortina embebido(s): se dejaron intactos y se abrió hueco en los tramos que "
+                         u"atraviesan".format(c["embebidos"]))
         if c.get("otros_borrados"):
             cosas.append(u"se borraron copias de elementos dependientes ({}); los originales siguen en el muro "
                          u"original".format(u", ".join(u"{} {}".format(v, k) for k, v in sorted(c["otros_borrados"].items()))))
@@ -292,7 +378,7 @@ def texto_reporte(rep):
         if cosas:
             revisar.append(u"  · Id {}: {}".format(c.get("id"), u"; ".join(cosas)))
     if revisar:
-        lineas.append(u"\nRevisar:")
+        lineas.append(u"\nDetalle por muro:")
         lineas.extend(revisar)
     if omitidos:
         lineas.append(u"\nOmitidos:")

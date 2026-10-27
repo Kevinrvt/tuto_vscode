@@ -20,7 +20,8 @@ DEFECTO = {
     "minimo_cm": u"5",
     "original": "inferior",      # inferior | superior
     "copiar_marca": True,
-    "huecos": True,
+    "cruce": "hueco",            # hueco | ajustar | omitir: puertas y ventanas que cruzan el corte
+    "vista": "todos",            # todos | uno: modo de la vista previa
     "escribir_tramo": False,
     "param_tramo": u"",
     "prefijo": u"A",
@@ -28,6 +29,7 @@ DEFECTO = {
     "TemaInterfaz": "Claro",
 }
 _OPCIONES = {"modo": ("una", "varias", "alzadas"), "referencia": ("base", "nivel"),
+             "cruce": ("hueco", "ajustar", "omitir"), "vista": ("todos", "uno"),
              "original": ("inferior", "superior"), "TemaInterfaz": TEMAS}
 
 

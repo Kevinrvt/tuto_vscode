@@ -119,18 +119,33 @@
 <Style x:Key="Subtitulo" TargetType="{x:Type TextBlock}"><Setter Property="FontSize" Value="12.5"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="{DynamicResource TextoAcento}"/><Setter Property="Margin" Value="0,0,0,10"/></Style>
 <Style x:Key="Nota" TargetType="{x:Type TextBlock}"><Setter Property="FontSize" Value="11.5"/><Setter Property="Foreground" Value="{DynamicResource TextoSuave}"/><Setter Property="TextWrapping" Value="Wrap"/><Setter Property="LineHeight" Value="17"/></Style>
 <Style x:Key="Tarjeta" TargetType="{x:Type Border}"><Setter Property="Background" Value="{DynamicResource FondoTarjeta}"/><Setter Property="BorderBrush" Value="{DynamicResource Borde}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="7"/><Setter Property="Padding" Value="14,12"/><Setter Property="Margin" Value="0,0,0,10"/></Style>
+<!-- Indicadores del encabezado -->
+<Style x:Key="Chip" TargetType="{x:Type Border}"><Setter Property="Background" Value="{DynamicResource FondoTarjeta}"/><Setter Property="BorderBrush" Value="{DynamicResource Borde}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="14,6"/><Setter Property="Margin" Value="8,0,0,0"/><Setter Property="MinWidth" Value="92"/></Style>
+<Style x:Key="ChipValor" TargetType="{x:Type TextBlock}"><Setter Property="FontSize" Value="18"/><Setter Property="FontWeight" Value="ExtraBold"/><Setter Property="Foreground" Value="{DynamicResource TextoAcento}"/></Style>
+<Style x:Key="ChipTexto" TargetType="{x:Type TextBlock}"><Setter Property="FontSize" Value="10.5"/><Setter Property="Foreground" Value="{DynamicResource TextoSuave}"/></Style>
+<!-- Numero de paso en cada tarjeta -->
+<Style x:Key="Paso" TargetType="{x:Type Border}"><Setter Property="Background" Value="{DynamicResource Acento}"/><Setter Property="CornerRadius" Value="11"/><Setter Property="Width" Value="22"/><Setter Property="Height" Value="22"/><Setter Property="Margin" Value="0,0,10,0"/><Setter Property="VerticalAlignment" Value="Center"/></Style>
+<!-- Atajos de altura y botones pequenos -->
+<Style x:Key="Atajo" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="MinHeight" Value="26"/><Setter Property="Height" Value="28"/><Setter Property="Padding" Value="10,2"/><Setter Property="Margin" Value="0,0,6,6"/><Setter Property="FontSize" Value="11.5"/><Setter Property="Foreground" Value="{DynamicResource TextoAcento}"/><Setter Property="BorderBrush" Value="{DynamicResource BordeControl}"/></Style>
+<Style x:Key="BotonIcono" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Width" Value="32"/><Setter Property="Height" Value="32"/><Setter Property="Padding" Value="0"/><Setter Property="FontSize" Value="15"/></Style>
 </Window.Resources>
 
 <DockPanel>
-<!-- Encabezado, como el de COLUMNAS -->
+<!-- Encabezado: marca, titulo y los numeros del corte -->
 <Border DockPanel.Dock="Top" Background="{DynamicResource FondoPanel}" BorderBrush="{DynamicResource Borde}" BorderThickness="0,0,0,1" Padding="16,8">
 <Grid>
 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 <StackPanel Grid.Column="0" VerticalAlignment="Center">
 <TextBlock Text="DENOVA" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextoSuave}"/>
 <TextBlock Text="Cortar muros por altura" FontSize="21" FontWeight="ExtraBold" Foreground="{DynamicResource Texto}"/>
+<TextBlock x:Name="TxtElementos" FontSize="11.5" Foreground="{DynamicResource TextoSuave}" TextTrimming="CharacterEllipsis" MaxWidth="420"/>
 </StackPanel>
-<TextBlock x:Name="TxtElementos" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" TextTrimming="CharacterEllipsis" MaxWidth="560"/>
+<StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+<Border Style="{StaticResource Chip}" ToolTip="Muros elegidos al abrir la ventana."><StackPanel><TextBlock x:Name="TxtStatMuros" Text="0" Style="{StaticResource ChipValor}"/><TextBlock Text="muros elegidos" Style="{StaticResource ChipTexto}"/></StackPanel></Border>
+<Border Style="{StaticResource Chip}" ToolTip="Muros que se van a cortar con las opciones actuales (los demás se omiten; la lista dice por qué)."><StackPanel><TextBlock x:Name="TxtStatCortan" Text="0" Style="{StaticResource ChipValor}"/><TextBlock Text="se cortan" Style="{StaticResource ChipTexto}"/></StackPanel></Border>
+<Border Style="{StaticResource Chip}" ToolTip="Muros que habrá en el modelo después de cortar (los originales más sus copias)."><StackPanel><TextBlock x:Name="TxtStatTramos" Text="0" Style="{StaticResource ChipValor}"/><TextBlock Text="tramos" Style="{StaticResource ChipTexto}"/></StackPanel></Border>
+<Border Style="{StaticResource Chip}" ToolTip="Puertas, ventanas o muros cortina que un corte atraviesa. Qué se hace con ellos lo decide el paso 2."><StackPanel><TextBlock x:Name="TxtStatCruces" Text="0" Style="{StaticResource ChipValor}"/><TextBlock Text="cruzan el corte" Style="{StaticResource ChipTexto}"/></StackPanel></Border>
+</StackPanel>
 </Grid>
 </Border>
 
@@ -144,21 +159,21 @@
 <ComboBox x:Name="CmbTema" Width="94" Margin="0,0,16,0" VerticalAlignment="Center" SelectedIndex="0" ToolTip="Apariencia clara u oscura. Se recuerda al volver a abrir.">
 <ComboBoxItem Content="Claro"/><ComboBoxItem Content="Oscuro"/>
 </ComboBox>
-<Button x:Name="BtnCancelar" Content="Cancelar" Width="110" Height="38" Margin="4,0"/>
-<Button x:Name="BtnCortar" Content="Cortar muros" Width="180" Height="38" Margin="4,0,0,0" Background="{DynamicResource Acento}" Foreground="White" BorderBrush="{DynamicResource Acento}" ToolTip="Parte los muros en los tramos de la vista previa. Todo queda en un solo Deshacer (Ctrl+Z)."/>
+<Button x:Name="BtnCancelar" Content="Cancelar" Width="110" Height="38" Margin="4,0" ToolTip="Cierra sin cambiar nada (también con Esc)."/>
+<Button x:Name="BtnCortar" Content="Cortar muros" Width="180" Height="38" Margin="4,0,0,0" Background="{DynamicResource Acento}" Foreground="White" BorderBrush="{DynamicResource Acento}" ToolTip="Parte los muros tal como se ven en la vista previa. Todo queda en un solo Deshacer (Ctrl+Z)."/>
 </StackPanel>
 </Grid>
 </Border>
 
 <Grid Margin="16,12,16,6">
-<Grid.ColumnDefinitions><ColumnDefinition Width="400"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<Grid.ColumnDefinitions><ColumnDefinition Width="420"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 
-<!-- Opciones -->
+<!-- Opciones, en tres pasos -->
 <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
 <StackPanel>
 <Border Style="{StaticResource Tarjeta}">
 <StackPanel>
-<TextBlock Text="Altura de corte" Style="{StaticResource Subtitulo}"/>
+<StackPanel Orientation="Horizontal" Margin="0,0,0,10"><Border Style="{StaticResource Paso}"><TextBlock Text="1" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Dónde cortar" Style="{StaticResource Subtitulo}" Margin="0" VerticalAlignment="Center"/></StackPanel>
 <Border Background="{DynamicResource FondoControl}" BorderBrush="{DynamicResource Borde}" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,0,12">
 <UniformGrid Columns="3">
 <RadioButton x:Name="RbUna" Style="{StaticResource Modo}" Content="Una altura" Margin="0,0,3,0" ToolTip="Un solo corte: cada muro queda en dos tramos, inferior y superior."/>
@@ -168,8 +183,8 @@
 </Border>
 <Grid x:Name="FilaAltura" Margin="0,0,0,8">
 <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-<TextBlock Text="Altura de corte (m)" Style="{StaticResource Etiqueta}" ToolTip="Altura del corte, en metros. Acepta punto o coma decimal: 1.50 o 1,50."/>
-<TextBox x:Name="TxtAltura" Grid.Column="1" ToolTip="Altura del corte, en metros. Acepta punto o coma decimal: 1.50 o 1,50."/>
+<TextBlock Text="Altura de corte (m)" Style="{StaticResource Etiqueta}" ToolTip="Altura del corte en metros. Acepta punto o coma decimal: 1.50 o 1,50."/>
+<TextBox x:Name="TxtAltura" Grid.Column="1" ToolTip="Altura del corte en metros. Acepta punto o coma decimal: 1.50 o 1,50."/>
 </Grid>
 <Grid x:Name="FilaAlturas" Margin="0,0,0,8">
 <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -181,6 +196,11 @@
 <TextBlock Text="Altura de cada alzada (m)" Style="{StaticResource Etiqueta}" ToolTip="Se corta cada esta altura, siempre desde la base del muro, hasta llegar al tope. El último tramo es lo que sobra."/>
 <TextBox x:Name="TxtAlzada" Grid.Column="1" ToolTip="Se corta cada esta altura, siempre desde la base del muro, hasta llegar al tope. El último tramo es lo que sobra."/>
 </Grid>
+<Grid Margin="0,0,0,6">
+<Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<TextBlock Text="Atajos" Style="{StaticResource Etiqueta}" VerticalAlignment="Top" Margin="0,5,8,0" ToolTip="Valores frecuentes: un clic los escribe en el campo de arriba."/>
+<WrapPanel x:Name="PanelAtajos" Grid.Column="1"/>
+</Grid>
 <Grid x:Name="FilaReferencia" Margin="0,0,0,8">
 <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 <TextBlock Text="Medir desde" Style="{StaticResource Etiqueta}" ToolTip="Base del muro: la altura se cuenta desde la base de cada muro. Nivel de base: desde su nivel (descuenta el desfase de base)."/>
@@ -188,7 +208,7 @@
 <ComboBoxItem Content="Base del muro"/><ComboBoxItem Content="Nivel de base"/>
 </ComboBox>
 </Grid>
-<Grid Margin="0,0,0,0">
+<Grid>
 <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 <TextBlock Text="Tramo mínimo (cm)" Style="{StaticResource Etiqueta}" ToolTip="Un corte que deja un tramo más bajo que esto no se hace: evita tiras de muro cuando una altura cae casi en el tope o en la base."/>
 <TextBox x:Name="TxtMinimo" Grid.Column="1" ToolTip="Un corte que deja un tramo más bajo que esto no se hace: evita tiras de muro cuando una altura cae casi en el tope o en la base."/>
@@ -198,7 +218,21 @@
 
 <Border Style="{StaticResource Tarjeta}">
 <StackPanel>
-<TextBlock Text="Tramos" Style="{StaticResource Subtitulo}"/>
+<StackPanel Orientation="Horizontal" Margin="0,0,0,10"><Border Style="{StaticResource Paso}"><TextBlock Text="2" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Puertas, ventanas y muros cortina" Style="{StaticResource Subtitulo}" Margin="0" VerticalAlignment="Center"/></StackPanel>
+<Grid Margin="0,0,0,8">
+<Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+<TextBlock Text="Si un corte los cruza" Style="{StaticResource Etiqueta}" ToolTip="Qué hacer cuando la altura de corte atraviesa una puerta, una ventana o un muro cortina embebido."/>
+<ComboBox x:Name="CmbCruce" Grid.Column="1" SelectedIndex="0" ToolTip="Qué hacer cuando la altura de corte atraviesa una puerta, una ventana o un muro cortina embebido.">
+<ComboBoxItem Content="Cortar y abrir hueco"/><ComboBoxItem Content="Mover el corte"/><ComboBoxItem Content="No cortar ese muro"/>
+</ComboBox>
+</Grid>
+<TextBlock x:Name="TxtExplicaCruce" Style="{StaticResource Nota}"/>
+</StackPanel>
+</Border>
+
+<Border Style="{StaticResource Tarjeta}">
+<StackPanel>
+<StackPanel Orientation="Horizontal" Margin="0,0,0,10"><Border Style="{StaticResource Paso}"><TextBlock Text="3" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><TextBlock Text="Resultado" Style="{StaticResource Subtitulo}" Margin="0" VerticalAlignment="Center"/></StackPanel>
 <Grid Margin="0,0,0,8">
 <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 <TextBlock Text="El muro original queda" Style="{StaticResource Etiqueta}" ToolTip="El tramo que conserva el muro original: su Id, sus etiquetas y lo que tenga hospedado. Los demás tramos son copias con los mismos parámetros. Si un extremo está enlazado (Attach), lo conserva el original."/>
@@ -207,15 +241,14 @@
 </ComboBox>
 </Grid>
 <CheckBox x:Name="ChkMarca" Content="Copiar también la Marca a los tramos nuevos" Margin="0,2" ToolTip="Revit avisa de marcas duplicadas; el aviso se acepta. Desmárcalo si cada tramo debe tener su propia Marca."/>
-<CheckBox x:Name="ChkHuecos" Content="Abrir huecos donde una puerta o ventana cruza el corte" Margin="0,2" ToolTip="Cada puerta o ventana queda en el tramo de su base. Si atraviesa el corte (una puerta de 2.10 m cortada a 1.50 m), en el tramo de arriba se abre un hueco del mismo ancho para que el muro no quede lleno. Solo en muros rectos."/>
-<CheckBox x:Name="ChkParamTramo" Content="Escribir el tramo en un parámetro" Margin="0,2" ToolTip="Anota en cada tramo su número desde abajo (A1, A2...) en el parámetro de texto que elijas: sirve para filtrar y para tablas de metrados por alzada."/>
+<CheckBox x:Name="ChkParamTramo" Content="Escribir el tramo en un parámetro" Margin="0,2" ToolTip="Anota en cada tramo su número desde abajo (A1, A2...) en el parámetro de texto que elijas: sirve para filtros y para tablas de metrados por alzada."/>
 <Grid Margin="26,4,0,6">
 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="56"/></Grid.ColumnDefinitions>
 <ComboBox x:Name="CmbParamTramo" Grid.Column="0" ToolTip="Parámetros de texto de instancia que tienen todos los muros elegidos."/>
 <TextBlock Grid.Column="1" Text="Prefijo" Style="{StaticResource Etiqueta}" Margin="10,0,6,0"/>
 <TextBox x:Name="TxtPrefijo" Grid.Column="2" ToolTip="Texto antes del número: A da A1, A2..."/>
 </Grid>
-<CheckBox x:Name="ChkSeleccionar" Content="Seleccionar los tramos al terminar" Margin="0,2"/>
+<CheckBox x:Name="ChkSeleccionar" Content="Seleccionar los tramos al terminar" Margin="0,2" ToolTip="Al cerrar, deja seleccionados en Revit todos los tramos resultantes, para revisarlos o filtrarlos."/>
 </StackPanel>
 </Border>
 
@@ -225,10 +258,31 @@
 
 <!-- Vista previa y lista -->
 <Grid Grid.Column="2">
-<Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="250"/></Grid.RowDefinitions>
+<Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="240"/></Grid.RowDefinitions>
 <Border Grid.Row="0" Style="{StaticResource Tarjeta}">
 <DockPanel>
-<TextBlock DockPanel.Dock="Top" Text="Vista previa (elevación)" Style="{StaticResource Subtitulo}"/>
+<Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+<Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+<TextBlock Text="Vista previa en elevación" Style="{StaticResource Subtitulo}" Margin="0" VerticalAlignment="Center"/>
+<Border Grid.Column="1" Background="{DynamicResource FondoControl}" BorderBrush="{DynamicResource Borde}" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,10,0">
+<StackPanel Orientation="Horizontal">
+<RadioButton x:Name="RbVistaTodos" GroupName="Vista" Style="{StaticResource Modo}" Content="Todos" Margin="0,0,3,0" Padding="0" ToolTip="Todos los muros que se cortan, uno al lado del otro y a la misma escala."/>
+<RadioButton x:Name="RbVistaUno" GroupName="Vista" Style="{StaticResource Modo}" Content="Uno a uno" ToolTip="Un muro grande, con las cotas de cada corte y de cada puerta o ventana. Cambia de muro con las flechas o con un clic en la lista."/>
+</StackPanel>
+</Border>
+<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+<Button x:Name="BtnAnterior" Content="‹" Style="{StaticResource BotonIcono}" ToolTip="Muro anterior"/>
+<TextBlock x:Name="TxtMuroActual" MinWidth="96" TextAlignment="Center" VerticalAlignment="Center" Margin="6,0" Foreground="{DynamicResource TextoSuave}"/>
+<Button x:Name="BtnSiguiente" Content="›" Style="{StaticResource BotonIcono}" ToolTip="Muro siguiente"/>
+</StackPanel>
+</Grid>
+<WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+<StackPanel Orientation="Horizontal" Margin="0,0,16,0"><Rectangle Width="16" Height="11" Fill="{DynamicResource Acento}" Opacity="0.4" Stroke="{DynamicResource Texto}" StrokeThickness="1" VerticalAlignment="Center"/><TextBlock Text="Tramo (A1, A2... desde abajo)" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
+<StackPanel Orientation="Horizontal" Margin="0,0,16,0"><Rectangle Width="16" Height="11" Fill="{DynamicResource Acento}" Opacity="0.4" Stroke="{DynamicResource Acento}" StrokeThickness="2.5" VerticalAlignment="Center"/><TextBlock Text="Conserva el muro original" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
+<StackPanel Orientation="Horizontal" Margin="0,0,16,0"><Line X1="0" Y1="6" X2="18" Y2="6" Stroke="{DynamicResource Acento}" StrokeThickness="1.6" StrokeDashArray="3 2" VerticalAlignment="Center"/><TextBlock Text="Corte" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
+<StackPanel Orientation="Horizontal" Margin="0,0,16,0"><Rectangle Width="10" Height="12" Fill="{DynamicResource FondoLienzo}" Stroke="{DynamicResource Texto}" StrokeThickness="1" VerticalAlignment="Center"/><TextBlock Text="Puerta, ventana o muro cortina" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
+<StackPanel Orientation="Horizontal"><Rectangle Width="10" Height="12" Fill="{DynamicResource FondoLienzo}" Stroke="{DynamicResource Acento}" StrokeThickness="2.2" VerticalAlignment="Center"/><TextBlock Text="Cruzado por un corte" FontSize="11" Margin="6,0,0,0" Foreground="{DynamicResource TextoSuave}"/></StackPanel>
+</WrapPanel>
 <Border Background="{DynamicResource FondoLienzo}" BorderBrush="{DynamicResource Borde}" BorderThickness="1" CornerRadius="5" ClipToBounds="True">
 <Canvas x:Name="CanvasPrevia" ClipToBounds="True"/>
 </Border>
@@ -236,8 +290,11 @@
 </Border>
 <Border Grid.Row="1" Style="{StaticResource Tarjeta}" Margin="0">
 <DockPanel>
-<TextBlock x:Name="TxtTituloLista" DockPanel.Dock="Top" Text="Muros" Style="{StaticResource Subtitulo}"/>
-<Grid x:Name="EncabezadoLista" DockPanel.Dock="Top" Margin="0,0,14,4"/>
+<Grid DockPanel.Dock="Top">
+<TextBlock x:Name="TxtTituloLista" Text="Muros" Style="{StaticResource Subtitulo}"/>
+<TextBlock Text="Clic en un muro para verlo en grande" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource TextoSuave}"/>
+</Grid>
+<Grid x:Name="EncabezadoLista" DockPanel.Dock="Top" Margin="6,0,20,4"/>
 <ScrollViewer VerticalScrollBarVisibility="Auto">
 <StackPanel x:Name="PanelMuros"/>
 </ScrollViewer>

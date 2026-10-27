@@ -60,7 +60,7 @@ def cargar_script():
               "System": modulo("System"), "System.Windows": modulo("System.Windows"),
               "System.Collections": modulo("System.Collections"),
               "System.Collections.Generic": modulo("System.Collections.Generic", List={})}
-    for sub in ("Controls", "Media", "Shapes"):
+    for sub in ("Controls", "Input", "Media", "Shapes"):
         dobles["System.Windows." + sub] = modulo("System.Windows." + sub)
     spec = importlib.util.spec_from_file_location("script_cortar_cpython", str(ROOT / "script.py"))
     mod = importlib.util.module_from_spec(spec)
@@ -84,9 +84,16 @@ class XamlTests(unittest.TestCase):
         for par in tema.values():
             self.assertEqual(len(par), 2)
 
-    def test_modos_de_corte_son_radios_del_mismo_grupo(self):
-        radios = [n for n in DOM.getElementsByTagName("RadioButton")]
-        self.assertEqual(sorted(r.getAttribute("x:Name") for r in radios), ["RbAlzadas", "RbUna", "RbVarias"])
+    def test_modos_de_corte_y_de_vista_son_grupos_separados(self):
+        radios = DOM.getElementsByTagName("RadioButton")
+        grupos = dict((r.getAttribute("x:Name"), r.getAttribute("GroupName") or "ModoCorte") for r in radios)
+        self.assertEqual(grupos, {"RbUna": "ModoCorte", "RbVarias": "ModoCorte", "RbAlzadas": "ModoCorte",
+                                  "RbVistaTodos": "Vista", "RbVistaUno": "Vista"})
+
+    def test_politicas_de_cruce_en_el_mismo_orden_que_el_combo(self):
+        combo = [n for n in DOM.getElementsByTagName("ComboBox") if n.getAttribute("x:Name") == "CmbCruce"][0]
+        textos = [i.getAttribute("Content") for i in combo.getElementsByTagName("ComboBoxItem")]
+        self.assertEqual(textos, [u"Cortar y abrir hueco", u"Mover el corte", u"No cortar ese muro"])
 
 
 class ScriptTests(unittest.TestCase):
@@ -99,6 +106,18 @@ class ScriptTests(unittest.TestCase):
                  {"textos": [u"otro"], "omitir": u"muro cortina"}]
         self.assertEqual(self.mod.parametros_comunes(infos), [u"00_SECTOR", u"Comentarios"])
         self.assertEqual(self.mod.parametros_comunes([{"omitir": u"x"}]), [])
+
+    def test_atajos_y_explicaciones(self):
+        self.assertEqual(sorted(self.mod.ATAJOS), ["alzadas", "una", "varias"])
+        self.assertEqual(self.mod.CRUCES, ("hueco", "ajustar", "omitir"))
+        for cruce in self.mod.CRUCES:
+            self.assertTrue(self.mod.EXPLICA_CRUCE[cruce])
+        import logica_corte as LC
+        for _, valor in self.mod.ATAJOS["varias"]:
+            self.assertIsNone(LC.leer_lista(valor)[1])
+        for modo in ("una", "alzadas"):
+            for _, valor in self.mod.ATAJOS[modo]:
+                self.assertIsNotNone(LC.leer_numero(valor))
 
     def test_es_muro_y_cancelado(self):
         self.assertTrue(self.mod.es_muro(self.db.Wall()))
